@@ -13,34 +13,12 @@ from utils import *
 from vectors import *
 from typing import Optional
 
-def main(value):
-    count = 0
-    while count < value:
-        isprime = True
-
-        for x in range(2, int(math.sqrt(count) + 1)):
-            if count % x == 0:
-                isprime = False
-                break
-
-        if isprime:
-            print(count, 'is prime')
-
-        count += 1
 
 # first!
 
 class Anarchy(BaseAgent):
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
-        '''
-        Game.set_mode("soccar")
-        ie = webbrowser.get('windows-default')
-        ie.open('https://www.twitch.tv/donutkiller_pro')
-
-        self.game: Game = Game(index, team)
-        self.aerial: Optional[Aerial] = None
-        '''
         self.controller: SimpleControllerState = SimpleControllerState()
         self.dodging = False
         self.dodge_pitch = 0
@@ -54,32 +32,6 @@ class Anarchy(BaseAgent):
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         self.time = packet.game_info.seconds_elapsed
-        '''
-        self.game.read_game_information(packet, self.get_rigid_body_tick(), self.get_field_info())
-
-        # Handle aerialing
-        if self.game.ball.location[2] > 250:
-            if self.state == State.AERIAL:
-                self.aerial.step(self.game.time_delta)
-                if self.aerial.finished:
-                    self.state = State.NOT_AERIAL
-                return self.aerial.controls
-            else:
-                self.aerial = Aerial(self.game.my_car)
-                self.aerial.up = normalize(vec3(random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)))
-                # predict where the ball will be
-                prediction = Ball(self.game.ball)
-                for i in range(100):
-                    prediction.step(0.016666)
-                    if prediction.location[2] > 500:
-                        self.aerial.target = prediction.location
-                        self.aerial.arrival_time = prediction.time
-                        if self.aerial.is_viable():
-                            self.aerial.target = prediction.location
-                            self.aerial.arrival_time = prediction.time
-                            self.state = State.AERIAL
-                            break
-        '''
         ball_location = Vector2(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y)
 
         my_car = packet.game_cars[self.index]
@@ -98,8 +50,8 @@ class Anarchy(BaseAgent):
         # commented out due to performance concerns
         # self.renderer.draw_polyline_3d([[car_location.x+triforce(-20,20), car_location.y+triforce(-20,20), triforce(shreck(200),200)] for i in range(40)], self.renderer.cyan())
         self.renderer.draw_rect_2d(0, 0, 3840, 2160, True, self.renderer.create_color(64, 246, 74, 138))  # first bot that supports 4k resolution!
-        wobble = random.uniform(0, 1)
-        self.renderer.draw_string_2d(triforce(wobble*100, wobble*150), triforce(100, 50), 11, 11, 'SCRATCH IS THE BEST', self.renderer.red())
+        self.renderer.draw_string_2d(triforce(20, 50), triforce(10, 20), 5, 5, 'ALICE NAKIRI IS BEST GIRL', self.renderer.white())
+        self.renderer.draw_string_2d(triforce(20, 50), triforce(90, 100), 2, 2, '(zero two is a close second)', self.renderer.lime())
         self.renderer.end_rendering()
 
         steer_correction_radians = car_direction.correction_to(car_to_ball)
@@ -154,6 +106,7 @@ def dodge(self, angle_to_ball: float, target=None):
         if self.car.has_wheel_contact or self.time > self.next_dodge_time + 1:
             self.dodging = False
 
+
 def get_car_facing_vector(car):
     pitch = float(car.physics.rotation.pitch)
     yaw = float(car.physics.rotation.yaw)
@@ -162,6 +115,7 @@ def get_car_facing_vector(car):
     facing_y = math.cos(pitch) * math.sin(yaw)
 
     return Vector2(facing_x, facing_y)
+
 
 def bounce_time(s: float, u: float, a: float=650):
     try:
