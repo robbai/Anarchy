@@ -100,6 +100,7 @@ class Vector2:
 
     @property
     def normalized(self) -> "Vector2":
+        # A shorthand to get a normalized (length 1) copy of this vector.
         return self / self.size
 
 
@@ -210,6 +211,7 @@ class Vector3:
 
     @property
     def normalized(self) -> "Vector3":
+        # A shorthand to get a normalized (length 1) copy of this vector.
         return self / self.size
 
 
