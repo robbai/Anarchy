@@ -13,10 +13,9 @@ from utils import *
 from vectors import *
 from typing import Optional
 
-'''
 def main(value):
     count = 0
-     while count < value:
+    while count < value:
         isprime = True
         
         for x in range(2, int(math.sqrt(count) + 1)):
@@ -28,7 +27,6 @@ def main(value):
             print(count, 'is prime')
         
         count += 1
-'''
 
 # first!
 
@@ -99,11 +97,9 @@ class Anarchy(BaseAgent):
         self.renderer.begin_rendering()
         # commented out due to performance concerns
         # self.renderer.draw_polyline_3d([[car_location.x+triforce(-20,20), car_location.y+triforce(-20,20), triforce(shreck(200),200)] for i in range(40)], self.renderer.cyan())
-        self.renderer.draw_rect_2d(0, 0, 3840, 2160, True, self.renderer.create_color(64, 246, 74,
-                                                                                      138))  # first bot that supports 4k resolution!
-        self.renderer.draw_string_2d(triforce(0, 100), triforce(0, 10), 8, 8, 'ZERO TWO IS BEST GIRL', self.renderer.lime())
-        self.renderer.draw_string_2d(triforce(0, 100), triforce(100, 110), 8, 8,
-                                     'SCRATCH IS \n ASSEMBLY \n (also banormies) \n https://www.twitch.tv/donutkiller_pro', self.renderer.red())
+        self.renderer.draw_rect_2d(0, 0, 3840, 2160, True, self.renderer.create_color(64, 246, 74, 138))  # first bot that supports 4k resolution!
+        wobble = random.uniform(0, 1)
+        self.renderer.draw_string_2d(triforce(wobble*100, wobble*150), triforce(100, 50), 11, 11, 'SCRATCH IS THE BEST', self.renderer.red())
         self.renderer.end_rendering()
 
         steer_correction_radians = car_direction.correction_to(car_to_ball)
