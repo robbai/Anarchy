@@ -5,6 +5,7 @@ from random import triangular as triforce
 import webbrowser
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
+from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 # Anarchy requires the newest rlutilities which cannot be pip installed via `pip install rlutilities` because it is not on PyPI. You must install it via `pip install -e .` after cloning the RLUtilities repository at: https://github.com/samuelpmish/RLUtilities.
 '''from rlutilities.linear_algebra import *
 from rlutilities.mechanics import Aerial
@@ -13,8 +14,10 @@ from utils import *
 from vectors import *
 from typing import Optional
 
+from typing import List
 
 # first!
+
 
 class Anarchy(BaseAgent):
     def __init__(self, name, team, index):
@@ -42,8 +45,14 @@ class Anarchy(BaseAgent):
         ball_location.y -= abs((ball_location - car_location).y) / 2 * (1 if self.team == 0 else - 1)
         car_to_ball = ball_location - car_location
         # Hi robbie!
+        """ I don't have enough deletions to remove the two lines below for `time` and `bounce_location`. If a kind soul could delete these few lines, I'd be eternally grateful.
         time = (bounce_time(packet.game_ball.physics.location.z - 92.75, -packet.game_ball.physics.velocity.z) if packet.game_ball.physics.location.z > 200 else 0.00001)
         bounce_location = Vector2(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y) #FEEL FREE TO CHANGE THIS TO ACTUALLY GET THE BOUNCE FROM PREDICTION
+        """
+
+        ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
+        time: float = ball_bounces[0].game_seconds - self.time
+        bounce_location: Vector2 = Vector2(ball_bounces[0].physics.location)
         target_velocity = (bounce_location - car_location).length / time
 
         self.renderer.begin_rendering()
@@ -121,3 +130,25 @@ def bounce_time(s: float, u: float, a: float=650):
     try:
         return (math.sqrt(2 * a * s + u ** 2) - u) / a
     except: return 0.000000001
+
+
+def get_ball_bounces(path: BallPrediction) -> List[Slice]:
+    """
+    Calculates when the ball bounces.
+
+    :param path: The BallPrediction object given by the framework
+    :return: BallPrediction Slices when the ball bounces
+    """
+    bounces: List[Slice] = []
+
+    # Skip the first 10 frames because they cause issues with finding bounces
+    for i in range(10, path.num_slices):
+        prev_slice: Slice = path.slices[i - 1]
+        current_slice: Slice = path.slices[i]
+        acceleration: Vector3 = (Vector3(current_slice.physics.velocity) - Vector3(prev_slice.physics.velocity)) / \
+                                (current_slice.game_seconds - prev_slice.game_seconds)
+        # The ball's Z acceleration will not be around -650 if it is bouncing.
+        if not (-600 > acceleration.z > -680):
+            bounces.append(current_slice)
+
+    return bounces
