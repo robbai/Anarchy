@@ -17,15 +17,15 @@ def main(value):
     count = 0
     while count < value:
         isprime = True
-        
+
         for x in range(2, int(math.sqrt(count) + 1)):
-            if count % x == 0: 
+            if count % x == 0:
                 isprime = False
                 break
-        
+
         if isprime:
             print(count, 'is prime')
-        
+
         count += 1
 
 # first!
@@ -80,7 +80,7 @@ class Anarchy(BaseAgent):
                             self.state = State.AERIAL
                             break
         '''
-        ball_location = Vector2(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y)        
+        ball_location = Vector2(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y)
 
         my_car = packet.game_cars[self.index]
         self.car = my_car
@@ -105,7 +105,7 @@ class Anarchy(BaseAgent):
         steer_correction_radians = car_direction.correction_to(car_to_ball)
         backwards = (math.cos(steer_correction_radians) < 0 and my_car.physics.location.z < 120)
         if backwards: steer_correction_radians = -(steer_correction_radians - sign(steer_correction_radians) * math.pi if steer_correction_radians != 0 else math.pi)
-        
+
         velocity_change = (target_velocity - car_velocity.flatten().length)
         if velocity_change > 200 or target_velocity > 1410:
             self.controller.boost = (abs(steer_correction_radians) < 0.2 and not my_car.is_super_sonic and not backwards)
@@ -118,14 +118,14 @@ class Anarchy(BaseAgent):
             self.controller.throttle = (-1 if not backwards else 1)
 
         turn = clamp11(steer_correction_radians * 3)
-        
+
         self.controller.steer = turn
         self.controller.handbrake = (abs(turn) > 1 and not my_car.is_super_sonic)
         self.controller.jump = False
 
         if (car_to_ball.size < 300 and car_velocity.size > 1000 and packet.game_ball.physics.location.z < 400) or self.dodging:
             dodge(self, car_direction.correction_to(car_to_ball), ball_location)
-        if not self.car.has_wheel_contact and not self.dodging: #Recovery
+        if not self.car.has_wheel_contact and not self.dodging:  # Recovery
             self.controller.roll = clamp11(self.car.physics.rotation.roll * -0.7)
             self.controller.pitch = clamp11(self.car.physics.rotation.pitch * -0.7)
             self.controller.boost = False
