@@ -51,6 +51,11 @@ class Anarchy(BaseAgent):
         pass
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
+        opponent = packet.game_cars[1 - self.index]
+        if opponent.name == 'Self-driving car':
+            # All hope is lost. At least by doing this, we can try to preserve our remaining shreds of dignity.
+            return
+
         self.time = packet.game_info.seconds_elapsed
         ball_location = Vector2(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y)
 
