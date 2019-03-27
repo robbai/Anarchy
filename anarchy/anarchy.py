@@ -34,6 +34,64 @@ from typing import List
  ⠄⠄⠄⠄⠈⠛⢿⣿⣿⣿⠁⠞⢿⣿⣿⡄⢿⣿⡇⣸⣿⣿⠿⠛⠁⠄⠄⠄⠄⠄
  ⠄⠄⠄⠄⠄⠄⠄⠉⠻⣿⣿⣾⣦⡙⠻⣷⣾⣿⠃⠿⠋⠁⠄⠄⠄⠄⠄⢀⣠⣴
  ⣿⣿⣿⣶⣶⣮⣥⣒⠲⢮⣝⡿⣿⣿⡆⣿⡿⠃⠄⠄⠄⠄⠄⠄⠄⣠⣴⣿⣿⣿
+Creeper, oh, man
+So we back in the mine
+Got our pickaxe swingin' from side to side, side, side to side
+This task a grueling one, hope to find some diamonds tonight
+Night, night, diamonds tonight
+Heads up, you hear a sound, turn around and look up
+Total shock fills your body
+Oh, no, it's you again
+I can never forget those eyes, eyes, eyes, eyes, eyes, eyes
+
+'Cause baby tonight, the creepers tryin' to steal all your stuff again
+'Cause baby tonight, you grab your pick, shovel and bolt again
+And run, run until it's done, done
+Until the sun comes up in the morn'
+'Cause baby tonight, the creepers tryin' to steal all your stuff again
+
+Just when you think you're safe
+Overhear some hissing from right behind, right, right behind
+"That's a nice life you have, shame it's gotta end at this time
+Time, time, time, time, time, time"
+Blows up, and then your health bar drops
+And you could use a 1-up, get inside don't be tardy
+So now you're stuck in there, half a heart is left but don't die
+Die, die, die, die, die
+
+'Cause baby tonight, the creepers tryin' to steal all your stuff again
+'Cause baby tonight, you grab your pick, shovel and bolt again
+And run, run until it's done, done
+Until the sun comes up in the morn'
+'Cause baby tonight, the creepers tryin' to steal all your stuff again
+
+Creepers, you're mine, haha
+Dig up diamonds, craft those diamonds, make some armor
+Get it baby, go and forge that like you so MLG pro
+The swords made of diamonds, so come at me bro
+Huh, training in your room under the torch light
+Hone that form to get you ready for the big fight
+Every single day in the whole night
+Creeper's out prowlin', alright
+Look at me, look at you
+Take my revenge that's what I'm gonna do
+I'm a warrior baby, what else is new?
+And my blade's gonna tear through you, bring it
+
+'Cause baby tonight, the creeper's tryin' to steal all your stuff again
+(Gather your stuff, yeah, let's take back the world)
+Yeah, baby, tonight grab your sword, armor and go (It's on)
+Take your revenge (Whoo)
+Oh, so fight, fight, like it's the last, last night of your life, life
+Show them your bite (Whoo)
+
+'Cause baby tonight, the creepers tryin' to steal all your stuff again
+'Cause baby tonight, you grab your pick, shovel and bolt again
+And run, run until it's done, done
+Until the sun comes up in the morn'
+'Cause baby tonight (Come on, swing your sword up high)
+The creepers tryin' to steal all your stuff again
+(Jab your sword down low)
 '''
 
 class Anarchy(BaseAgent):
