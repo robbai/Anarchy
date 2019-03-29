@@ -1,9 +1,10 @@
 import math
 from typing import Tuple, Optional, Union
-
-import rlbot.utils.structures.game_data_struct as game_data_struct
 import random
 import webbrowser
+
+import rlbot.utils.structures.game_data_struct as game_data_struct
+
 from utils import *
 
 

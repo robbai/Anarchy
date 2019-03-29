@@ -3,18 +3,14 @@ import math
 import random
 from random import triangular as triforce
 import webbrowser
+from typing import Optional, List
+
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
-# Anarchy requires the newest rlutilities which cannot be pip installed via `pip install rlutilities` because it is not on PyPI. You must install it via `pip install -e .` after cloning the RLUtilities repository at: https://github.com/samuelpmish/RLUtilities.
-'''from rlutilities.linear_algebra import *
-from rlutilities.mechanics import Aerial
-from rlutilities.simulation import Game, Ball'''
+
 from utils import *
 from vectors import *
-from typing import Optional
-
-from typing import List
 
 # first!
 
