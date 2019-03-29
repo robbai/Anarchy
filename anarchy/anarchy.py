@@ -1,8 +1,5 @@
-import base64
 import math
-import random
 from random import triangular as triforce
-import webbrowser
 from typing import Optional, List
 
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
