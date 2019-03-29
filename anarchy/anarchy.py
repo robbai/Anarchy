@@ -10,6 +10,7 @@ from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 from utils import *
 from vectors import *
 from render_mesh import *
+from objects import *
 
 # first!
 
@@ -42,7 +43,7 @@ Oh, no, it's you again
 class Anarchy(BaseAgent):
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
-        self.controller: SimpleControllerState = SimpleControllerState()
+        self.controller = SimpleControllerState()
         self.dodging = False
         self.halfflipping = False
         self.dodge_pitch = 0
@@ -50,6 +51,8 @@ class Anarchy(BaseAgent):
         self.time = 0
         self.next_dodge_time = 0
         #self.state: State = State.NOT_AERIAL
+        self.me = carObject()
+        self.ball = ballObject()
 
     def initialize_agent(self):
         import os
@@ -61,6 +64,7 @@ class Anarchy(BaseAgent):
         pass
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
+        self.preprocess(packet) #Heyyyy ddthj here
         opponent = packet.game_cars[1 - self.index]
         if opponent.name == 'Self-driving car':
             # All hope is lost. At least by doing this, we can try to preserve our remaining shreds of dignity.
@@ -162,6 +166,10 @@ class Anarchy(BaseAgent):
             self.controller.boost = False
 
         return self.controller
+    
+    def preprocess(self,packet):
+        self.me.update(packet.game_cars[self.index])
+        self.ball.update(packet.game_ball)
 
 
 def dodge(self, angle_to_ball: float, target=None):
