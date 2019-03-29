@@ -116,15 +116,32 @@ class Anarchy(BaseAgent):
         car_velocity = Vector3(my_car.physics.velocity.x, my_car.physics.velocity.y, my_car.physics.velocity.z)
         car_direction = get_car_facing_vector(my_car)
         car_to_ball = ball_location - car_location
+        team_sign = (1 if my_car.team == 0 else -1)
+        enemy_goal = Vector2(0, team_sign * 5120)
         # Hi robbie!
 
+        '''
         #Set a destination for Anarchy to reach
         ball_location.y -= abs((ball_location - car_location).y) / 2 * (1 if self.team == 0 else - 1)
 
+        '''        
         #Handle bouncing 
         ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
         time: float = ball_bounces[0].game_seconds - self.time
         bounce_location: Vector2 = Vector2(ball_bounces[0].physics.location)
+
+        #Set a destination for Anarchy to reach
+        wait = packet.game_ball.physics.location.z > 200
+        if wait:
+            destination = bounce_location
+        else:
+            destination = ball_location
+        if team_sign * car_location.y > team_sign * ball_location.y or (abs(ball_location.x) > 3200 and abs(ball_location.x) + 100 > abs(car_location.x)):
+            destination.y -= max(abs(car_to_ball.y) / 2.5 * team_sign, 20 if wait else 90)
+        else:
+            destination += (destination - enemy_goal).normalized * max(car_to_ball.length / 4, 20 if wait else 100)
+        if abs(car_location.y > 5120): destination.x = min(700, max(-700, destination.x)) #Don't get stuck in goal
+        car_to_destination = (destination - car_location)
 
         #Rendering
         self.renderer.begin_rendering()
@@ -136,12 +153,18 @@ class Anarchy(BaseAgent):
         self.renderer.end_rendering()
 
         #Choose whether to drive backwards or not
+        '''
         steer_correction_radians = car_direction.correction_to(car_to_ball)
+        '''
+        steer_correction_radians = car_direction.correction_to(car_to_destination)
         backwards = (math.cos(steer_correction_radians) < 0 and my_car.physics.location.z < 120)
         if backwards: steer_correction_radians = -(steer_correction_radians - sign(steer_correction_radians) * math.pi if steer_correction_radians != 0 else math.pi)
 
         #Speed control
+        '''
         target_velocity = (bounce_location - car_location).length / time
+        '''
+        target_velocity = (((bounce_location - car_location).length / time) if time > 0 else 2300)
         velocity_change = (target_velocity - car_velocity.flatten().length)
         if velocity_change > 200 or target_velocity > 1410:
             self.controller.boost = (abs(steer_correction_radians) < 0.2 and not my_car.is_super_sonic and not backwards)
