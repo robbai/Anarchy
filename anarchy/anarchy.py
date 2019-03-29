@@ -110,23 +110,26 @@ class Anarchy(BaseAgent):
             # All hope is lost. At least by doing this, we can try to preserve our remaining shreds of dignity.
             return
 
+        #Collect data from the packet
         self.time = packet.game_info.seconds_elapsed
         ball_location = Vector2(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y)
-
         my_car = packet.game_cars[self.index]
         self.car = my_car
         car_location = Vector2(my_car.physics.location.x, my_car.physics.location.y)
         car_velocity = Vector3(my_car.physics.velocity.x, my_car.physics.velocity.y, my_car.physics.velocity.z)
         car_direction = get_car_facing_vector(my_car)
-        ball_location.y -= abs((ball_location - car_location).y) / 2 * (1 if self.team == 0 else - 1)
         car_to_ball = ball_location - car_location
         # Hi robbie!
 
+        #Set a destination for Anarchy to reach
+        ball_location.y -= abs((ball_location - car_location).y) / 2 * (1 if self.team == 0 else - 1)
+
+        #Handle bouncing 
         ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
         time: float = ball_bounces[0].game_seconds - self.time
         bounce_location: Vector2 = Vector2(ball_bounces[0].physics.location)
-        target_velocity = (bounce_location - car_location).length / time
 
+        #Rendering
         self.renderer.begin_rendering()
         # commented out due to performance concerns
         # self.renderer.draw_polyline_3d([[car_location.x+triforce(-20,20), car_location.y+triforce(-20,20), triforce(shreck(200),200)] for i in range(40)], self.renderer.cyan())
@@ -135,10 +138,13 @@ class Anarchy(BaseAgent):
         self.renderer.draw_string_2d(triforce(20, 50), triforce(90, 100), 2, 2, '(zero two is a close second)', self.renderer.lime())
         self.renderer.end_rendering()
 
+        #Choose whether to drive backwards or not
         steer_correction_radians = car_direction.correction_to(car_to_ball)
         backwards = (math.cos(steer_correction_radians) < 0 and my_car.physics.location.z < 120)
         if backwards: steer_correction_radians = -(steer_correction_radians - sign(steer_correction_radians) * math.pi if steer_correction_radians != 0 else math.pi)
 
+        #Speed control
+        target_velocity = (bounce_location - car_location).length / time
         velocity_change = (target_velocity - car_velocity.flatten().length)
         if velocity_change > 200 or target_velocity > 1410:
             self.controller.boost = (abs(steer_correction_radians) < 0.2 and not my_car.is_super_sonic and not backwards)
@@ -150,12 +156,13 @@ class Anarchy(BaseAgent):
             self.controller.boost = False
             self.controller.throttle = (-1 if not backwards else 1)
 
+        #Steering
         turn = clamp11(steer_correction_radians * 3)
-
         self.controller.steer = turn
         self.controller.handbrake = (abs(turn) > 1 and not my_car.is_super_sonic)
-        self.controller.jump = False
 
+        #Dodging
+        self.controller.jump = False
         if (car_to_ball.size < 300 and car_velocity.size > 1000 and packet.game_ball.physics.location.z < 400) or self.dodging:
             dodge(self, car_direction.correction_to(car_to_ball), ball_location)
         if not self.car.has_wheel_contact and not self.dodging:  # Recovery
