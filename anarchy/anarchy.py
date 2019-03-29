@@ -121,10 +121,6 @@ class Anarchy(BaseAgent):
         ball_location.y -= abs((ball_location - car_location).y) / 2 * (1 if self.team == 0 else - 1)
         car_to_ball = ball_location - car_location
         # Hi robbie!
-        """ I don't have enough deletions to remove the two lines below for `time` and `bounce_location`. If a kind soul could delete these few lines, I'd be eternally grateful.
-        time = (bounce_time(packet.game_ball.physics.location.z - 92.75, -packet.game_ball.physics.velocity.z) if packet.game_ball.physics.location.z > 200 else 0.00001)
-        bounce_location = Vector2(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y) #FEEL FREE TO CHANGE THIS TO ACTUALLY GET THE BOUNCE FROM PREDICTION
-        """
 
         ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
         time: float = ball_bounces[0].game_seconds - self.time
@@ -205,7 +201,7 @@ def get_car_facing_vector(car):
 def bounce_time(s: float, u: float, a: float=650):
     try:
         return (math.sqrt(2 * a * s + u ** 2) - u) / a
-    except: return 0.000000001
+    except: return 0
 
 
 def get_ball_bounces(path: BallPrediction) -> List[Slice]:
