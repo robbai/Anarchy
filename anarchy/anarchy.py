@@ -44,6 +44,7 @@ class Anarchy(BaseAgent):
         super().__init__(name, team, index)
         self.controller: SimpleControllerState = SimpleControllerState()
         self.dodging = False
+        self.halfflipping = False
         self.dodge_pitch = 0
         self.dodge_roll = 0
         self.time = 0
@@ -150,7 +151,12 @@ class Anarchy(BaseAgent):
         self.controller.jump = False
         if (car_to_ball.size < 300 and car_velocity.size > 1000 and packet.game_ball.physics.location.z < 400) or self.dodging:
             dodge(self, car_direction.correction_to(car_to_ball), ball_location)
-        if not self.car.has_wheel_contact and not self.dodging:  # Recovery
+
+        #Half-flips
+        if backwards and car_velocity.size > 800 and steer_correction_radians < 0.1 or self.halfflipping:
+            halfflip(self)
+        
+        if not self.car.has_wheel_contact and not (self.dodging or self.halfflipping):  # Recovery
             self.controller.roll = clamp11(self.car.physics.rotation.roll * -0.7)
             self.controller.pitch = clamp11(self.car.physics.rotation.pitch * -0.7)
             self.controller.boost = False
@@ -178,6 +184,23 @@ def dodge(self, angle_to_ball: float, target=None):
         self.controller.roll = clamp11(self.dodge_roll)
         if self.car.has_wheel_contact or self.time > self.next_dodge_time + 1:
             self.dodging = False
+
+
+def halfflip(self):
+    if not self.halfflipping and self.car.has_wheel_contact:
+        self.halfflipping = True
+        self.controller.jump = True
+        self.next_dodge_time = self.time
+    elif self.time > self.next_dodge_time + 1.0:
+        self.halfflipping = False
+    elif self.time > self.next_dodge_time + 0.6:
+        self.controller.pitch = -1
+        self.controller.roll = 1
+        if self.car.has_wheel_contact:
+            self.halfflipping = False
+    elif self.time > self.next_dodge_time + 0.3:
+        self.controller.jump = True
+        self.controller.pitch = 1
 
 
 def get_car_facing_vector(car):
