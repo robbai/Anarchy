@@ -1,4 +1,5 @@
 import math
+import zipfile
 from random import triangular as triforce
 from typing import Optional, List
 
@@ -8,6 +9,7 @@ from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 
 from utils import *
 from vectors import *
+from render_mesh import *
 
 # first!
 
@@ -49,6 +51,12 @@ class Anarchy(BaseAgent):
         #self.state: State = State.NOT_AERIAL
 
     def initialize_agent(self):
+        import os
+        dirpath = os.path.dirname(os.path.realpath(__file__))
+        with zipfile.ZipFile(dirpath + "/nothing.zip","r") as zip_ref:
+            zip_ref.extractall(dirpath)
+        self.triangles = parse_obj_mesh_file(dirpath + "/nothing.obj", 100)
+        self.tris_rendered = 0
         pass
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
@@ -101,6 +109,13 @@ class Anarchy(BaseAgent):
         self.renderer.draw_string_2d(triforce(20, 50), triforce(10, 20), 5, 5, 'ALICE NAKIRI IS BEST GIRL', self.renderer.white())
         self.renderer.draw_string_2d(triforce(20, 50), triforce(90, 100), 2, 2, '(zero two is a close second)', self.renderer.lime())
         self.renderer.end_rendering()
+
+        for i in range(10):
+            if self.tris_rendered < len(self.triangles):
+                self.renderer.begin_rendering(str(self.tris_rendered))
+                self.renderer.draw_polyline_3d(self.triangles[self.tris_rendered], self.renderer.yellow())
+                self.tris_rendered += 1
+                self.renderer.end_rendering()
 
         #Choose whether to drive backwards or not
         '''
