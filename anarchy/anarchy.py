@@ -51,7 +51,7 @@ class Anarchy(BaseAgent):
         self.time = 0
         self.next_dodge_time = 0
         #self.state: State = State.NOT_AERIAL
-        self.me = carObject()
+        self.me = carObject(index)
         self.ball = ballObject()
 
     def initialize_agent(self):
