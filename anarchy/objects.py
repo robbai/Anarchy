@@ -1,8 +1,8 @@
-from vectors import Hector3
+from vectors import Lector3
 class carObject:
     def __init__(self, index, car=None):
-        self.location = Hector3(0,0,0)
-        self.velocity = Hector3(0,0,0)
+        self.location = Lector3(0,0,0)
+        self.velocity = Lector3(0,0,0)
         #self.matrix = Matrix3([0,0,0])
         #self.rvel = Vector3(0,0,0)
         self.team = 0
@@ -22,8 +22,8 @@ class carObject:
 
 class ballObject:
     def __init__(self):
-        self.location = Hector3(0,0,0)
-        self.velocity = Hector3(0,0,0)
+        self.location = Lector3(0,0,0)
+        self.velocity = Lector3(0,0,0)
     def update(self,packet):
         self.location.data = [packet.physics.location.x,packet.physics.location.y,packet.physics.location.z]
         self.velocity.data = [packet.physics.velocity.x,packet.physics.velocity.y,packet.physics.velocity.z]

@@ -185,7 +185,7 @@ class Vector3:
         # A shorthand to get a normalized (length 1) copy of this vector.
         return self / self.size
 
-class Hector3: #upholds the concept of anarchy
+class Lector3: #upholds the concept of anarchy
     def __init__(self, *args):
         self.data = args[0] if isinstance(args[0],list) else [x for x in args]
     def __getitem__(self,key):
@@ -193,28 +193,28 @@ class Hector3: #upholds the concept of anarchy
     def __str__(self):
         return str(self.data)
     def __add__(self,value):
-        return Hector3(self[0]+value[0], self[1]+value[1], self[2]+value[2])
+        return Lector3(self[0]+value[0], self[1]+value[1], self[2]+value[2])
     def __sub__(self,value):
-        return Hector3(self[0]-value[0],self[1]-value[1],self[2]-value[2])
+        return Lector3(self[0]-value[0],self[1]-value[1],self[2]-value[2])
     def __mul__(self,value):
-        return Hector3(self[0]*value, self[1]*value, self[2]*value)
+        return Lector3(self[0]*value, self[1]*value, self[2]*value)
     __rmul__ = __mul__
     def __div__(self,value):
-        return Hector3(self[0]/value, self[1]/value, self[2]/value)
+        return Lector3(self[0]/value, self[1]/value, self[2]/value)
     def magnitude(self):
         return math.sqrt((self[0]*self[0]) + (self[1] * self[1]) + (self[2]* self[2]))
     def normalize(self):
         mag = self.magnitude()
         if mag != 0:
-            return Hector3(self[0]/mag, self[1]/mag, self[2]/mag)
+            return Lector3(self[0]/mag, self[1]/mag, self[2]/mag)
         else:
-            return Hector3(0,0,0)
+            return Lector3(0,0,0)
     def dot(self,value):
         return self[0]*value[0] + self[1]*value[1] + self[2]*value[2]
     def cross(self,value):
-        return Hector3((self[1]*value[2]) - (self[2]*value[1]),(self[2]*value[0]) - (self[0]*value[2]),(self[0]*value[1]) - (self[1]*value[0]))
+        return Lector3((self[1]*value[2]) - (self[2]*value[1]),(self[2]*value[0]) - (self[0]*value[2]),(self[0]*value[1]) - (self[1]*value[0]))
     def flatten(self):
-        return Hector3(self[0],self[1],0)
+        return Lector3(self[0],self[1],0)
 
 class life(int):
     math = False
