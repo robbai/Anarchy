@@ -55,11 +55,6 @@ class Anarchy(BaseAgent):
         self.time = 0
         self.next_dodge_time = 0
         self.quick_chat_handler: QuickChatHandler = QuickChatHandler(self)
-        #self.state: State = State.NOT_AERIAL
-        """
-        self.me = carObject(index)
-        self.ball = ballObject()
-        """
 
     def initialize_agent(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -71,9 +66,6 @@ class Anarchy(BaseAgent):
         pass
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
-        """
-        self.preprocess(packet) #Heyyyy ddthj here
-        """
         self.quick_chat_handler.handle_quick_chats(packet)
 
         opponent = packet.game_cars[1 - self.index]
@@ -142,9 +134,6 @@ class Anarchy(BaseAgent):
         if backwards: steer_correction_radians = -(steer_correction_radians - sign(steer_correction_radians) * math.pi if steer_correction_radians != 0 else math.pi)
 
         #Speed control
-        '''
-        target_velocity = (bounce_location - car_location).length / time
-        '''
         target_velocity = (((bounce_location - car_location).length / time) if time > 0 else 2300)
         velocity_change = (target_velocity - car_velocity.flatten().length)
         if velocity_change > 200 or target_velocity > 1410:
@@ -177,12 +166,6 @@ class Anarchy(BaseAgent):
             self.controller.boost = False
 
         return self.controller
-
-    """
-    def preprocess(self,packet):
-        self.me.update(packet.game_cars[self.index])
-        self.ball.update(packet.game_ball)
-    """
 
 
 def dodge(self, angle_to_ball: float, target=None):

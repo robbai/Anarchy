@@ -225,13 +225,6 @@ class Vector3:
         new_z: float = z if z is not None else self.z
         return Vector3(new_x, new_y, new_z)
 
-""" I don't have enough lines to delete all of Lector3, so I'll comment out the parts I can't delete just yet.
-class Lector3: #upholds the concept of anarchy
-    def __init__(self, *args):
-        self.data = args[0] if isinstance(args[0],list) else [x for x in args]
-    def __getitem__(self,key):
-        return self.data[key]
-"""
 
 class life(int):
     math = False
