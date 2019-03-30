@@ -59,8 +59,10 @@ class Anarchy(BaseAgent):
     def initialize_agent(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
             tmpdir = Path(tmpdirname)
-            with zipfile.ZipFile(Path(__file__).absolute().parent / 'nothing.zip', 'r') as zip_ref:
-                zip_ref.extractall(tmpdir)
+            try:
+                with zipfile.ZipFile(Path(__file__).absolute().parent / 'nothing.zip', 'r') as zip_ref: zip_ref.extractall(tmpdir)
+            except:
+                with zipfile.ZipFile(str(Path(__file__).absolute().parent / 'nothing.zip'), 'r') as zip_ref: zip_ref.extractall(tmpdir)
             self.triangles = parse_obj_mesh_file(tmpdir / 'nothing.obj', 100)
         self.tris_rendered = 0
         pass
@@ -84,6 +86,7 @@ class Anarchy(BaseAgent):
         car_to_ball = ball_location - car_location
         team_sign = (1 if my_car.team == 0 else -1)
         enemy_goal = Vector2(0, team_sign * 5120)
+        kickoff = (ball_location.x == 0 and ball_location.y == 0)
         # Hi robbie!
 
         '''
@@ -102,10 +105,12 @@ class Anarchy(BaseAgent):
             destination = bounce_location
         else:
             destination = ball_location
-        if team_sign * car_location.y > team_sign * ball_location.y or (abs(ball_location.x) > 3200 and abs(ball_location.x) + 100 > abs(car_location.x)):
-            destination.y -= max(abs(car_to_ball.y) / 2.5 * team_sign, 20 if wait else 90)
+        if kickoff:
+            pass
+        elif team_sign * car_location.y > team_sign * ball_location.y or (abs(ball_location.x) > 3200 and abs(ball_location.x) + 100 > abs(car_location.x)):
+            destination.y -= max(abs(car_to_ball.y) / 2 * team_sign, 50 if wait else 90)
         else:
-            destination += (destination - enemy_goal).normalized * max(car_to_ball.length / 4, 20 if wait else 100)
+            destination += (destination - enemy_goal).normalized * max(car_to_ball.length / 3, 50 if wait else 100)
         if abs(car_location.y > 5120): destination.x = min(700, max(-700, destination.x)) #Don't get stuck in goal
         car_to_destination = (destination - car_location)
 
@@ -147,17 +152,18 @@ class Anarchy(BaseAgent):
             self.controller.throttle = (-1 if not backwards else 1)
 
         #Steering
-        turn = clamp11(steer_correction_radians * 3)
+        turn = clamp11(steer_correction_radians * 2)
         self.controller.steer = turn
         self.controller.handbrake = (abs(turn) > 1 and not my_car.is_super_sonic)
 
         #Dodging
         self.controller.jump = False
-        if (car_to_ball.size < 300 and car_velocity.size > 1000 and packet.game_ball.physics.location.z < 400) or self.dodging:
+        dodge_for_speed = (velocity_change > 700 and not backwards and my_car.boost < 10 and car_to_destination.size > 1000 and abs(steer_correction_radians) < 0.1)
+        if (((car_to_ball.size < 300 and packet.game_ball.physics.location.z < 300) or dodge_for_speed) and car_velocity.size > 1200) or self.dodging:
             dodge(self, car_direction.correction_to(car_to_ball), ball_location)
 
         #Half-flips
-        if backwards and car_velocity.size > 800 and steer_correction_radians < 0.1 or self.halfflipping:
+        if backwards and car_to_ball.size > 1200 and car_velocity.size > 900 and abs(steer_correction_radians) < 0.1 or self.halfflipping:
             halfflip(self)
 
         if not self.car.has_wheel_contact and not (self.dodging or self.halfflipping):  # Recovery
