@@ -149,6 +149,9 @@ class Vector3:
 
     def __rtruediv__(self, v: float) -> "Vector3":
         return Vector3(self.x / v, self.y / v, self.z / v)
+    
+    def dot(self,v):
+        return self.x*v.x + self.y*v.y + self.z*v.z
 
     def __str__(self) -> str:
         return f"({self.x}, {self.y}, {self.z})"
