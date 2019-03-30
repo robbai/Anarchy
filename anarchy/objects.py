@@ -1,3 +1,6 @@
+""" I don't have enough deletions to fix this, so I'll comment it out.
+TODO: import Vector3 instead of Lector3, PascalCase the classes, type annotate each instance variable, correct spelling of `airborn` to `airborne`, either use Vector3.modified method in `update` instead of `.data` or just create a new Vector3 object (which is slower)
+
 from vectors import Lector3
 class carObject:
     def __init__(self, index, car=None):
@@ -27,3 +30,4 @@ class ballObject:
     def update(self,packet):
         self.location.data = [packet.physics.location.x,packet.physics.location.y,packet.physics.location.z]
         self.velocity.data = [packet.physics.velocity.x,packet.physics.velocity.y,packet.physics.velocity.z]
+"""

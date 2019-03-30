@@ -111,6 +111,7 @@ def main(a=0):
         ie = webbrowser.get(webbrowser.iexplore)
         ie.open('https://www.youtube.com/watch?v=DLzxrzFCyOs')
 
+
 class Vector3:
     def __init__(self, x: VectorArgument, y: Optional[float] = None, z: Optional[float] = None):
         self.x: float = 0
@@ -218,36 +219,19 @@ class Vector3:
         # A shorthand to get a normalized (length 1) copy of this vector.
         return self / self.size
 
+    def modified(self, x: float = None, y: float = None, z: float = None) -> "Vector3":
+        new_x: float = x if x is not None else self.x
+        new_y: float = y if y is not None else self.y
+        new_z: float = z if z is not None else self.z
+        return Vector3(new_x, new_y, new_z)
+
+""" I don't have enough lines to delete all of Lector3, so I'll comment out the parts I can't delete just yet.
 class Lector3: #upholds the concept of anarchy
     def __init__(self, *args):
         self.data = args[0] if isinstance(args[0],list) else [x for x in args]
     def __getitem__(self,key):
         return self.data[key]
-    def __str__(self):
-        return str(self.data)
-    def __add__(self,value):
-        return Lector3(self[0]+value[0], self[1]+value[1], self[2]+value[2])
-    def __sub__(self,value):
-        return Lector3(self[0]-value[0],self[1]-value[1],self[2]-value[2])
-    def __mul__(self,value):
-        return Lector3(self[0]*value, self[1]*value, self[2]*value)
-    __rmul__ = __mul__
-    def __div__(self,value):
-        return Lector3(self[0]/value, self[1]/value, self[2]/value)
-    def magnitude(self):
-        return math.sqrt((self[0]*self[0]) + (self[1] * self[1]) + (self[2]* self[2]))
-    def normalize(self):
-        mag = self.magnitude()
-        if mag != 0:
-            return Lector3(self[0]/mag, self[1]/mag, self[2]/mag)
-        else:
-            return Lector3(0,0,0)
-    def dot(self,value):
-        return self[0]*value[0] + self[1]*value[1] + self[2]*value[2]
-    def cross(self,value):
-        return Lector3((self[1]*value[2]) - (self[2]*value[1]),(self[2]*value[0]) - (self[0]*value[2]),(self[0]*value[1]) - (self[1]*value[0]))
-    def flatten(self):
-        return Lector3(self[0],self[1],0)
+"""
 
 class life(int):
     math = False

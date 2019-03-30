@@ -42,6 +42,7 @@ Total shock fills your body
 Oh, no, it's you again
 '''
 
+
 class Anarchy(BaseAgent):
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
@@ -53,8 +54,10 @@ class Anarchy(BaseAgent):
         self.time = 0
         self.next_dodge_time = 0
         #self.state: State = State.NOT_AERIAL
+        """
         self.me = carObject(index)
         self.ball = ballObject()
+        """
 
     def initialize_agent(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -66,7 +69,9 @@ class Anarchy(BaseAgent):
         pass
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
+        """
         self.preprocess(packet) #Heyyyy ddthj here
+        """
         opponent = packet.game_cars[1 - self.index]
         if opponent.name == 'Self-driving car':
             # All hope is lost. At least by doing this, we can try to preserve our remaining shreds of dignity.
@@ -169,9 +174,11 @@ class Anarchy(BaseAgent):
 
         return self.controller
 
+    """
     def preprocess(self,packet):
         self.me.update(packet.game_cars[self.index])
         self.ball.update(packet.game_ball)
+    """
 
 
 def dodge(self, angle_to_ball: float, target=None):
@@ -195,6 +202,7 @@ def dodge(self, angle_to_ball: float, target=None):
         if self.car.has_wheel_contact or self.time > self.next_dodge_time + 1:
             self.dodging = False
 
+
 class Matrix3D:
     def __init__(self,r):
         CR = math.cos(r[2])
@@ -207,6 +215,7 @@ class Matrix3D:
 
     def dot(self,vector):
         return Vector3(self.data[0].dot(vector),self.data[1].dot(vector),self.data[2].dot(vector))
+
 
 def halfflip(self):
     if not self.halfflipping and self.car.has_wheel_contact:
