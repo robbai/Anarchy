@@ -1,5 +1,7 @@
 import math
+import tempfile
 import zipfile
+from pathlib import Path
 from random import triangular as triforce
 from typing import Optional, List
 
@@ -55,11 +57,11 @@ class Anarchy(BaseAgent):
         self.ball = ballObject()
 
     def initialize_agent(self):
-        import os
-        dirpath = os.path.dirname(os.path.realpath(__file__))
-        with zipfile.ZipFile(dirpath + "/nothing.zip","r") as zip_ref:
-            zip_ref.extractall(dirpath)
-        self.triangles = parse_obj_mesh_file(dirpath + "/nothing.obj", 100)
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdir = Path(tmpdirname)
+            with zipfile.ZipFile(Path(__file__).absolute().parent / 'nothing.zip', 'r') as zip_ref:
+                zip_ref.extractall(tmpdir)
+            self.triangles = parse_obj_mesh_file(tmpdir / 'nothing.obj', 100)
         self.tris_rendered = 0
         pass
 
@@ -87,8 +89,8 @@ class Anarchy(BaseAgent):
         #Set a destination for Anarchy to reach
         ball_location.y -= abs((ball_location - car_location).y) / 2 * (1 if self.team == 0 else - 1)
 
-        '''        
-        #Handle bouncing 
+        '''
+        #Handle bouncing
         ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
         time: float = ball_bounces[0].game_seconds - self.time
         bounce_location: Vector2 = Vector2(ball_bounces[0].physics.location)
@@ -159,14 +161,14 @@ class Anarchy(BaseAgent):
         #Half-flips
         if backwards and car_velocity.size > 800 and steer_correction_radians < 0.1 or self.halfflipping:
             halfflip(self)
-        
+
         if not self.car.has_wheel_contact and not (self.dodging or self.halfflipping):  # Recovery
             self.controller.roll = clamp11(self.car.physics.rotation.roll * -0.7)
             self.controller.pitch = clamp11(self.car.physics.rotation.pitch * -0.7)
             self.controller.boost = False
 
         return self.controller
-    
+
     def preprocess(self,packet):
         self.me.update(packet.game_cars[self.index])
         self.ball.update(packet.game_ball)
@@ -200,7 +202,7 @@ class Matrix3D:
         CP = math.cos(r[0])
         SP = math.sin(r[0])
         CY = math.cos(r[1])
-        SY = math.sin(r[1])        
+        SY = math.sin(r[1])
         self.data = [Vector3(CP*CY, CP*SY, SP),Vector3(CY*SP*SR-CR*SY, SY*SP*SR+CR*CY, -CP * SR),Vector3(-CR*CY*SP-SR*SY, -CR*SY*SP+SR*CY, CP*CR)]
 
     def dot(self,vector):
