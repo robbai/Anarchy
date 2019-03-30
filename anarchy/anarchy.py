@@ -13,6 +13,7 @@ from utils import *
 from vectors import *
 from render_mesh import *
 from objects import *
+from utilities.quick_chat_handler import QuickChatHandler
 
 # first!
 
@@ -53,6 +54,7 @@ class Anarchy(BaseAgent):
         self.dodge_roll = 0
         self.time = 0
         self.next_dodge_time = 0
+        self.quick_chat_handler: QuickChatHandler = QuickChatHandler(self)
         #self.state: State = State.NOT_AERIAL
         """
         self.me = carObject(index)
@@ -72,6 +74,8 @@ class Anarchy(BaseAgent):
         """
         self.preprocess(packet) #Heyyyy ddthj here
         """
+        self.quick_chat_handler.handle_quick_chats(packet)
+
         opponent = packet.game_cars[1 - self.index]
         if opponent.name == 'Self-driving car':
             # All hope is lost. At least by doing this, we can try to preserve our remaining shreds of dignity.
