@@ -87,6 +87,7 @@ class Anarchy(BaseAgent):
         team_sign = (1 if my_car.team == 0 else -1)
         enemy_goal = Vector2(0, team_sign * 5120)
         kickoff = (ball_location.x == 0 and ball_location.y == 0)
+        impact, impact_time = get_impact(self.get_ball_prediction_struct(), self.car, Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y, packet.game_ball.physics.location.z), self.renderer)
         # Hi robbie!
 
         '''
@@ -96,19 +97,23 @@ class Anarchy(BaseAgent):
         '''
         #Handle bouncing
         ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
-        time: float = ball_bounces[0].game_seconds - self.time
-        bounce_location: Vector2 = Vector2(ball_bounces[0].physics.location)
+        for b in ball_bounces:
+            time: float = b.game_seconds - self.time
+            if time < impact_time - 0.5: continue
+            bounce_location: Vector2 = Vector2(b.physics.location)
+            break
+        if bounce_location is None: time = 0
 
         #Set a destination for Anarchy to reach
         wait = packet.game_ball.physics.location.z > 200
         if wait:
             destination = bounce_location
         else:
-            destination = ball_location
+            destination = impact.flatten()
         if kickoff:
             pass
         elif team_sign * car_location.y > team_sign * ball_location.y or (abs(ball_location.x) > 3200 and abs(ball_location.x) + 100 > abs(car_location.x)):
-            destination.y -= max(abs(car_to_ball.y) / 2 * team_sign, 50 if wait else 90)
+            destination.y -= max(abs(car_to_ball.y) / 3.25 * team_sign, 50 if wait else 90)
         else:
             destination += (destination - enemy_goal).normalized * max(car_to_ball.length / 3, 50 if wait else 100)
         if abs(car_location.y > 5120): destination.x = min(700, max(-700, destination.x)) #Don't get stuck in goal
@@ -121,6 +126,7 @@ class Anarchy(BaseAgent):
         self.renderer.draw_rect_2d(0, 0, 3840, 2160, True, self.renderer.create_color(64, 246, 74, 138))  # first bot that supports 4k resolution!
         self.renderer.draw_string_2d(triforce(20, 50), triforce(10, 20), 5, 5, 'ALICE NAKIRI IS BEST GIRL', self.renderer.white())
         self.renderer.draw_string_2d(triforce(20, 50), triforce(90, 100), 2, 2, '(zero two is a close second)', self.renderer.lime())
+        self.renderer.draw_string_2d(20, 100, 2, 2, "Max Speed: " + str(int(estimate_max_speed(self.car))), self.renderer.white())
         self.renderer.end_rendering()
 
         for i in range(10):
@@ -263,3 +269,33 @@ def get_ball_bounces(path: BallPrediction) -> List[Slice]:
             bounces.append(current_slice)
 
     return bounces
+
+def estimate_max_speed(car, cap_at_sonic: bool=True):
+    velocity_vec = Vector2(car.physics.velocity.x, car.physics.velocity.y)
+    velocity = velocity_vec.length
+    boost = float(car.boost)
+
+    return min(2200.0 if cap_at_sonic else 2300.0, 1410.0 + boost / 33.3 * 991.667)
+
+def get_impact(path: BallPrediction, car, ball_position: Vector3, renderer = None) -> Tuple[Vector3, float]:
+    car_position = Vector3(car.physics.location.x, car.physics.location.y, car.physics.location.z)
+    prev_slice = ball_position
+
+    u = Vector3(car.physics.velocity.x, car.physics.velocity.y, car.physics.velocity.z).length
+    v = estimate_max_speed(car)
+    for i in range(0, path.num_slices):
+        current_slice: Vector3 = Vector3(path.slices[i].physics.location.x, path.slices[i].physics.location.y, path.slices[i].physics.location.z)
+
+        s = ((current_slice - car_position).length - 92.75)
+        t = (float(i) / 60)
+        a = (991.667 if car.boost > 0 else 0) + (0 if u > 1410 else 1000) #Bad estimation
+        t_a = (0 if a == 0 else (v - u) / a)
+        mx_s = ((t + (t - t_a)) / 2 * v)
+
+        if mx_s > s:
+            if renderer is not None: renderer.begin_rendering("Impact")
+            renderer.draw_line_3d([ball_position.x, ball_position.y, ball_position.z], [current_slice.x, current_slice.y, current_slice.z], renderer.red())
+            if renderer is not None: renderer.end_rendering()
+            return current_slice, t
+
+    return ball_position, 0 #Couldn't find a point of impact
