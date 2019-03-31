@@ -1,5 +1,7 @@
 import random
 from typing import List, Tuple
+import time
+import threading
 
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlbot.utils.structures.quick_chats import QuickChats
@@ -14,6 +16,19 @@ _GOT_DEMOED: List[int] = [QuickChats.Custom_Toxic_DeAlloc, QuickChats.Apologies_
                           QuickChats.Compliments_Thanks]
 
 
+class Spam(threading.Thread):
+    def __init__(self, handler: 'QuickChatHandler', chats: List[int]):
+        super(Spam, self).__init__()
+        self.handler = handler
+        self.chats = chats
+        self.count = random.randint(2, 5) #How many quick-chats to send
+        self.pause = random.uniform(0.4, 0.8) #How long to pause between chats
+
+    def run(self):
+        for i in range(self.count):
+            self.handler.agent.send_quick_chat(QuickChats.CHAT_EVERYONE, random.choice(self.chats))
+            time.sleep(self.pause)
+    
 class QuickChatHandler:
     def __init__(self, agent: BaseAgent) -> None:
         self.agent: BaseAgent = agent
@@ -23,14 +38,18 @@ class QuickChatHandler:
     def handle_quick_chats(self, packet: GameTickPacket) -> None:
         current_score: Tuple[int, int] = QuickChatHandler.get_game_score(packet)
 
+        spam = None
+
         if current_score[self.agent.team] > self.prev_frame_score[self.agent.team]:
-            self.agent.send_quick_chat(QuickChats.CHAT_EVERYONE, random.choice(_HAS_SCORED))
+            spam = Spam(self, _HAS_SCORED)
         if current_score[not self.agent.team] > self.prev_frame_score[not self.agent.team]:
-            self.agent.send_quick_chat(QuickChats.CHAT_EVERYONE, random.choice(_SCORED_ON))
+            spam = Spam(self, _SCORED_ON)
         if packet.game_cars[self.agent.index].is_demolished:
-            self.agent.send_quick_chat(QuickChats.CHAT_EVERYONE, random.choice(_GOT_DEMOED))
+            spam = Spam(self, _GOT_DEMOED)
         if packet.game_cars[self.agent.index].score_info.demolitions > self.prev_frame_demos:
-            self.agent.send_quick_chat(QuickChats.CHAT_EVERYONE, random.choice(_HAS_DEMOED))
+            spam = Spam(self, _HAS_DEMOED)
+
+        if not spam is None: spam.start()
 
         self.prev_frame_demos = packet.game_cars[self.agent.index].score_info.demolitions
         self.prev_frame_score = current_score
