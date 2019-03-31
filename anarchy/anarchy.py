@@ -1,18 +1,15 @@
-import math
 import tempfile
 import zipfile
 from pathlib import Path
 from random import triangular as triforce
-from typing import Optional, List
+from typing import List
 
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 
-from utils import *
-from vectors import *
+from utilities.vectors import *
 from render_mesh import *
-from objects import *
 from utilities.quick_chat_handler import QuickChatHandler
 
 # first!

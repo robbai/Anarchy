@@ -5,7 +5,7 @@ import webbrowser
 
 import rlbot.utils.structures.game_data_struct as game_data_struct
 
-from utils import *
+from utilities.utils import *
 
 
 VectorArgument = Union[float, game_data_struct.Vector3]
@@ -181,7 +181,7 @@ class Vector3:
             nonlocal did_you_have_fun_yet
             if did_you_have_fun_yet:
                 return self(selfie)   # If you're reading this, good job. Congrats, you've found it. Move along citicen.
-            import 𝚒𝚗𝚜𝚙𝚎𝚌𝚝, 𝚠𝚒𝚗𝚜𝚘𝚞𝚗𝚍
+            import 𝚠𝚒𝚗𝚜𝚘𝚞𝚗𝚍
             from rlbot.agents.base_agent import BaseAgent
             frames = inspect.getouterframes(inspect.currentframe())
             for outer in frames:
