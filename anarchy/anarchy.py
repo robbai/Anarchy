@@ -97,6 +97,7 @@ class Anarchy(BaseAgent):
         '''
         #Handle bouncing
         ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
+        bounce_location = None
         for b in ball_bounces:
             time: float = b.game_seconds - self.time
             if time < impact_time - 0.5: continue
@@ -113,9 +114,9 @@ class Anarchy(BaseAgent):
         if kickoff:
             pass
         elif team_sign * car_location.y > team_sign * ball_location.y or (abs(ball_location.x) > 3200 and abs(ball_location.x) + 100 > abs(car_location.x)):
-            destination.y += max(abs(car_to_ball.y) / 3 * -team_sign, 70 if wait else 100)
+            destination.y -= max(abs(car_to_ball.y) / 2.9, 70 if wait else 100) * team_sign
         else:
-            destination += (destination - enemy_goal).normalized * max(car_to_ball.length / 3.5, 60 if wait else 110)
+            destination += (destination - enemy_goal).normalized * max(car_to_ball.length / 3.3, 60 if wait else 120)
         if abs(car_location.y > 5120): destination.x = min(700, max(-700, destination.x)) #Don't get stuck in goal
         car_to_destination = (destination - car_location)
 
@@ -127,6 +128,7 @@ class Anarchy(BaseAgent):
         self.renderer.draw_string_2d(triforce(20, 50), triforce(10, 20), 5, 5, 'ALICE NAKIRI IS BEST GIRL', self.renderer.white())
         self.renderer.draw_string_2d(triforce(20, 50), triforce(90, 100), 2, 2, '(zero two is a close second)', self.renderer.lime())
         self.renderer.draw_string_2d(20, 100, 2, 2, "Max Speed: " + str(int(estimate_max_speed(self.car))), self.renderer.white())
+        self.renderer.draw_line_3d([destination.x, destination.y, impact.z], [impact.x, impact.y, impact.z], self.renderer.blue())
         self.renderer.end_rendering()
 
         for i in range(10):
@@ -166,10 +168,10 @@ class Anarchy(BaseAgent):
         self.controller.jump = False
         dodge_for_speed = (velocity_change > 700 and not backwards and my_car.boost < 10 and car_to_destination.size > 1000 and abs(steer_correction_radians) < 0.1)
         if (((car_to_ball.size < 300 and packet.game_ball.physics.location.z < 300) or dodge_for_speed) and car_velocity.size > 1200) or self.dodging:
-            dodge(self, car_direction.correction_to(car_to_ball), ball_location)
+            dodge(self, car_direction.correction_to(car_to_destination if car_to_ball.size > 1500 else car_to_ball), ball_location)
 
         #Half-flips
-        if backwards and car_to_ball.size > 1200 and car_velocity.size > 900 and abs(steer_correction_radians) < 0.1 or self.halfflipping:
+        if backwards and impact_time > 0.6 and car_velocity.size > 900 and abs(steer_correction_radians) < 0.1 or self.halfflipping:
             halfflip(self)
 
         if not self.car.has_wheel_contact and not (self.dodging or self.halfflipping):  # Recovery
@@ -290,7 +292,7 @@ def get_impact(path: BallPrediction, car, ball_position: Vector3, renderer = Non
         t = (float(i) / 60)
         a = (991.667 if car.boost > 0 else 0) + (0 if u > 1410 else 1000) #Bad estimation
         t_a = (0 if a == 0 else (v - u) / a)
-        mx_s = ((t + (t - t_a)) / 2 * v)
+        mx_s = ((t + (t - t_a)) / 2 * v + u * t) 
 
         if mx_s > s:
             if renderer is not None: renderer.begin_rendering("Impact")
