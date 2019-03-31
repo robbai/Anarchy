@@ -113,9 +113,9 @@ class Anarchy(BaseAgent):
         if kickoff:
             pass
         elif team_sign * car_location.y > team_sign * ball_location.y or (abs(ball_location.x) > 3200 and abs(ball_location.x) + 100 > abs(car_location.x)):
-            destination.y -= max(abs(car_to_ball.y) / 3.25 * team_sign, 50 if wait else 90)
+            destination.y += max(abs(car_to_ball.y) / 3 * -team_sign, 70 if wait else 100)
         else:
-            destination += (destination - enemy_goal).normalized * max(car_to_ball.length / 3, 50 if wait else 100)
+            destination += (destination - enemy_goal).normalized * max(car_to_ball.length / 3.5, 60 if wait else 110)
         if abs(car_location.y > 5120): destination.x = min(700, max(-700, destination.x)) #Don't get stuck in goal
         car_to_destination = (destination - car_location)
 
