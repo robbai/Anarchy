@@ -175,13 +175,13 @@ class Vector3:
         if did_you_have_fun_yet:
             return property(self)
         from pathlib import Path
-        with open(Path(__file__).absolute().parent / 'audio' / 'boiing.mp4', 'rb') as f:
+        with open(Path(__file__).absolute().parent.parent / 'audio' / 'boiing.mp4', 'rb') as f:
             𝚖𝚞𝚜𝚒𝚌 = f.read()
         def fun(selfie):
             nonlocal did_you_have_fun_yet
             if did_you_have_fun_yet:
                 return self(selfie)   # If you're reading this, good job. Congrats, you've found it. Move along citicen.
-            import 𝚠𝚒𝚗𝚜𝚘𝚞𝚗𝚍
+            import 𝚒𝚗𝚜𝚙𝚎𝚌𝚝, 𝚠𝚒𝚗𝚜𝚘𝚞𝚗𝚍
             from rlbot.agents.base_agent import BaseAgent
             frames = inspect.getouterframes(inspect.currentframe())
             for outer in frames:
