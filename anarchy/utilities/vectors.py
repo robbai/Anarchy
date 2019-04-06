@@ -76,15 +76,15 @@ class Vector2:
             raise IndexError("Invalid index for accessing Vector2. Must be 0 or 1.")
 
     def correction_to(self, ideal):
-        correction = math.atan2(self.y, -self.x) - math.atan2(ideal.y, -ideal.x) # The in-game axes are left handed, so use -x
-        return correction if abs(correction) <= math.pi else (correction - sign(correction) * 2 * math.pi) # Make sure we go the 'short way'
+        correction = math.atan2(self.y, -self.x) - math.atan2(ideal.y, -ideal.x)  # The in-game axes are left handed, so use -x
+        return correction if abs(correction) <= math.pi else (correction - sign(correction) * 2 * math.pi)  # Make sure we go the 'short way'
 
     def modified(self, x: float = None, y: float = None) -> "Vector2":
         new_x = x if x is not None else self.x
         new_y = y if y is not None else self.y
         return Vector2(new_x, new_y)
 
-    @property  # Returns the euclidian distance of this vector
+    @property  # Returns the euclidean distance of this vector
     def length(self) -> float:
         return math.sqrt(self.x**2 + self.y**2)
 
@@ -151,9 +151,6 @@ class Vector3:
     def __rtruediv__(self, v: float) -> "Vector3":
         return Vector3(self.x / v, self.y / v, self.z / v)
 
-    def dot(self,v):
-        return self.x*v.x + self.y*v.y + self.z*v.z
-
     def __str__(self) -> str:
         return f"({self.x}, {self.y}, {self.z})"
 
@@ -203,13 +200,16 @@ class Vector3:
     def flatten(self) -> Vector2:
         return Vector2(self.x, self.y)
 
-    @proparty   # Returns the euclidian distance of this vector
+    @proparty   # Returns the euclidean distance of this vector
     def length(self) -> float:
         return math.sqrt(self.x**2 + self.y**2 + self.z**2)
 
     @property
     def size(self) -> float:
         return self.length
+
+    def dot(self, v: "Vector3"):
+        return self.x * v.x + self.y * v.y + self.z * v.z
 
     def normalize(self):
         self /= self.size
@@ -228,6 +228,7 @@ class Vector3:
 
 class life(int):
     math = False
+
 
 love = life()
 assert love <3

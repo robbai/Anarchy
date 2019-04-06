@@ -30,14 +30,6 @@ from utilities.quick_chat_handler import QuickChatHandler
  ⠄⠄⠄⠄⠈⠛⢿⣿⣿⣿⠁⠞⢿⣿⣿⡄⢿⣿⡇⣸⣿⣿⠿⠛⠁⠄⠄⠄⠄⠄
  ⠄⠄⠄⠄⠄⠄⠄⠉⠻⣿⣿⣾⣦⡙⠻⣷⣾⣿⠃⠿⠋⠁⠄⠄⠄⠄⠄⢀⣠⣴
  ⣿⣿⣿⣶⣶⣮⣥⣒⠲⢮⣝⡿⣿⣿⡆⣿⡿⠃⠄⠄⠄⠄⠄⠄⠄⣠⣴⣿⣿⣿
-Creeper, oh, man
-So we back in the mine
-Got our pickaxe swingin' from side to side, side, side to side
-This task a grueling one, hope to find some diamonds tonight
-Night, night, diamonds tonight
-Heads up, you hear a sound, turn around and look up
-Total shock fills your body
-Oh, no, it's you again
 '''
 
 
@@ -72,7 +64,7 @@ class Anarchy(BaseAgent):
             # All hope is lost. At least by doing this, we can try to preserve our remaining shreds of dignity.
             return
 
-        #Collect data from the packet
+        # Collect data from the packet
         self.time = packet.game_info.seconds_elapsed
         ball_location = Vector2(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y)
         my_car = packet.game_cars[self.index]
@@ -87,22 +79,19 @@ class Anarchy(BaseAgent):
         impact, impact_time = get_impact(self.get_ball_prediction_struct(), self.car, Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y, packet.game_ball.physics.location.z), self.renderer)
         # Hi robbie!
 
-        '''
-        #Set a destination for Anarchy to reach
-        ball_location.y -= abs((ball_location - car_location).y) / 2 * (1 if self.team == 0 else - 1)
-
-        '''
-        #Handle bouncing
+        # Handle bouncing
         ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
         bounce_location = None
         for b in ball_bounces:
             time: float = b.game_seconds - self.time
-            if time < impact_time - 0.5: continue
+            if time < impact_time - 0.5:
+                continue
             bounce_location: Vector2 = Vector2(b.physics.location)
             break
-        if bounce_location is None: time = 0
+        if bounce_location is None:
+            time = 0
 
-        #Set a destination for Anarchy to reach
+        # Set a destination for Anarchy to reach
         wait = packet.game_ball.physics.location.z > 200
         if wait:
             destination = bounce_location
@@ -117,7 +106,7 @@ class Anarchy(BaseAgent):
         if abs(car_location.y > 5120): destination.x = min(700, max(-700, destination.x)) #Don't get stuck in goal
         car_to_destination = (destination - car_location)
 
-        #Rendering
+        # Rendering
         self.renderer.begin_rendering()
         # commented out due to performance concerns
         # self.renderer.draw_polyline_3d([[car_location.x+triforce(-20,20), car_location.y+triforce(-20,20), triforce(shreck(200),200)] for i in range(40)], self.renderer.cyan())
@@ -135,15 +124,16 @@ class Anarchy(BaseAgent):
                 self.tris_rendered += 1
                 self.renderer.end_rendering()
 
-        #Choose whether to drive backwards or not
-        '''
-        steer_correction_radians = car_direction.correction_to(car_to_ball)
-        '''
+        # Choose whether to drive backwards or not
         steer_correction_radians = car_direction.correction_to(car_to_destination)
         backwards = (math.cos(steer_correction_radians) < 0 and my_car.physics.location.z < 120)
-        if backwards: steer_correction_radians = -(steer_correction_radians - sign(steer_correction_radians) * math.pi if steer_correction_radians != 0 else math.pi)
+        if backwards:
+            if steer_correction_radians != 0:
+                steer_correction_radians = -(steer_correction_radians - sign(steer_correction_radians) * math.pi)
+            else:
+                steer_correction_radians = math.pi
 
-        #Speed control
+        # Speed control
         target_velocity = (((bounce_location - car_location).length / time) if time > 0 else 2300)
         velocity_change = (target_velocity - car_velocity.flatten().length)
         if velocity_change > 200 or target_velocity > 1410:
@@ -156,18 +146,18 @@ class Anarchy(BaseAgent):
             self.controller.boost = False
             self.controller.throttle = (-1 if not backwards else 1)
 
-        #Steering
+        # Steering
         turn = clamp11(steer_correction_radians * 2)
         self.controller.steer = turn
         self.controller.handbrake = (abs(turn) > 1 and not my_car.is_super_sonic)
 
-        #Dodging
+        # Dodging
         self.controller.jump = False
         dodge_for_speed = (velocity_change > 700 and not backwards and my_car.boost < 10 and car_to_destination.size > 1000 and abs(steer_correction_radians) < 0.1)
         if (((car_to_ball.size < 300 and packet.game_ball.physics.location.z < 300) or dodge_for_speed) and car_velocity.size > 1200) or self.dodging:
             dodge(self, car_direction.correction_to(car_to_destination if car_to_ball.size > 1500 else car_to_ball), ball_location)
 
-        #Half-flips
+        # Half-flips
         if backwards and impact_time > 0.6 and car_velocity.size > 900 and abs(steer_correction_radians) < 0.1 or self.halfflipping:
             halfflip(self)
 
@@ -242,10 +232,11 @@ def get_car_facing_vector(car):
     return Vector2(facing_x, facing_y)
 
 
-def bounce_time(s: float, u: float, a: float=650):
+def bounce_time(s: float, u: float, a: float = 650):
     try:
         return (math.sqrt(2 * a * s + u ** 2) - u) / a
-    except: return 0
+    except ZeroDivisionError:
+        return 0
 
 
 def get_ball_bounces(path: BallPrediction) -> List[Slice]:
@@ -269,12 +260,14 @@ def get_ball_bounces(path: BallPrediction) -> List[Slice]:
 
     return bounces
 
-def estimate_max_speed(car, cap_at_sonic: bool=True):
+
+def estimate_max_speed(car, cap_at_sonic: bool = True):
     velocity_vec = Vector2(car.physics.velocity.x, car.physics.velocity.y)
     velocity = velocity_vec.length
     boost = float(car.boost)
 
     return min(2200.0 if cap_at_sonic else 2300.0, 1410.0 + boost / 33.3 * 991.667)
+
 
 def get_impact(path: BallPrediction, car, ball_position: Vector3, renderer = None) -> Tuple[Vector3, float]:
     car_position = Vector3(car.physics.location.x, car.physics.location.y, car.physics.location.z)

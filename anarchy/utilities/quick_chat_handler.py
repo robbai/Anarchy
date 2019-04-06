@@ -21,14 +21,15 @@ class Spam(threading.Thread):
         super(Spam, self).__init__()
         self.handler = handler
         self.chats = chats
-        self.count = random.randint(2, 5) #How many quick-chats to send
-        self.pause = random.uniform(0.4, 0.8) #How long to pause between chats
+        self.count = random.randint(2, 5)  # How many quick-chats to send
+        self.pause = random.uniform(0.4, 0.8)  # How long to pause between chats
 
     def run(self):
         for i in range(self.count):
             self.handler.agent.send_quick_chat(QuickChats.CHAT_EVERYONE, random.choice(self.chats))
             time.sleep(self.pause)
-    
+
+
 class QuickChatHandler:
     def __init__(self, agent: BaseAgent) -> None:
         self.agent: BaseAgent = agent
@@ -49,7 +50,8 @@ class QuickChatHandler:
         if packet.game_cars[self.agent.index].score_info.demolitions > self.prev_frame_demos:
             spam = Spam(self, _HAS_DEMOED)
 
-        if not spam is None: spam.start()
+        if spam is not None:
+            spam.start()
 
         self.prev_frame_demos = packet.game_cars[self.agent.index].score_info.demolitions
         self.prev_frame_score = current_score
