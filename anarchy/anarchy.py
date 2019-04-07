@@ -9,7 +9,7 @@ from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 
 from utilities.vectors import *
-from render_mesh import *
+from utilities.render_mesh import *
 from utilities.quick_chat_handler import QuickChatHandler
 
 # first!
