@@ -52,8 +52,9 @@ class Anarchy(BaseAgent):
                 with zipfile.ZipFile(Path(__file__).absolute().parent / 'nothing.zip', 'r') as zip_ref: zip_ref.extractall(tmpdir)
             except:
                 with zipfile.ZipFile(str(Path(__file__).absolute().parent / 'nothing.zip'), 'r') as zip_ref: zip_ref.extractall(tmpdir)
-            self.triangles = parse_obj_mesh_file(tmpdir / 'nothing.obj', 100)
-        self.tris_rendered = 0
+            self.color_groups = parse_obj_mesh_file(tmpdir / 'zerotwo.obj', 70)
+        self.polygons_rendered = 0
+        self.current_color_group = 0
         pass
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
@@ -112,12 +113,7 @@ class Anarchy(BaseAgent):
         self.renderer.draw_line_3d([destination.x, destination.y, impact.z], [impact.x, impact.y, impact.z], self.renderer.blue())
         self.renderer.end_rendering()
 
-        for i in range(10):
-            if self.tris_rendered < len(self.triangles):
-                self.renderer.begin_rendering(str(self.tris_rendered))
-                self.renderer.draw_polyline_3d(self.triangles[self.tris_rendered], self.renderer.yellow())
-                self.tris_rendered += 1
-                self.renderer.end_rendering()
+        render_mesh(self)
 
         # Choose whether to drive backwards or not
         steer_correction_radians = car_direction.correction_to(car_to_destination)
