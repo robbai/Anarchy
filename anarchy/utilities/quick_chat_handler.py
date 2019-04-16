@@ -37,6 +37,7 @@ class QuickChatHandler:
         self.agent: BaseAgent = agent
         self.prev_frame_demos: int = 0
         self.prev_frame_score: Tuple[int, int] = (0, 0)
+        self.prev_touch_name = None
 
     def handle_quick_chats(self, packet: GameTickPacket) -> None:
         current_score: Tuple[int, int] = QuickChatHandler.get_game_score(packet)
@@ -53,7 +54,7 @@ class QuickChatHandler:
             spam = Spam(self, _HAS_DEMOED)
         if spam is None:
             try:
-                spam=Spam(self, _MINE) if (''+self.packet.game_ball.latest_touch.player_name)==self.agent.name else (Spam(self, _BOOST) if self.packet.game_cars[self.agent.index].boost==13 else None)
+                spam=Spam(self, _MINE) if (('' + packet.game_ball.latest_touch.player_name) != ('' + self.prev_touch_name) and (''+packet.game_ball.latest_touch.player_name)==self.agent.name) else (Spam(self, _BOOST) if packet.game_cars[self.agent.index].boost==13 else None)
             except:
                 print("oops")
         if spam is not None:
@@ -61,6 +62,7 @@ class QuickChatHandler:
 
         self.prev_frame_demos = packet.game_cars[self.agent.index].score_info.demolitions
         self.prev_frame_score = current_score
+        self.prev_touch_name = packet.game_ball.latest_touch.player_name
 
     @staticmethod
     def get_game_score(packet: GameTickPacket) -> Tuple[int, int]:
