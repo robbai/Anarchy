@@ -101,11 +101,12 @@ class Anarchy(BaseAgent):
         if kickoff:
             pass
         elif avoid_own_goal:
-            destination += Vector2(0 if wait else team_sign * -100, 0 if not wait else (impact_time * 240 + 100) * -sign(impact_projection.x))
-        elif team_sign * car_location.y > team_sign * ball_location.y or (abs(ball_location.x) > 3200 and abs(ball_location.x) + 100 > abs(car_location.x)):
-            destination.y -= max(abs(car_to_ball.y) / 2.9, 70 if wait else 100) * team_sign
+            offset = (impact_time * 200 + 100)
+            destination += Vector2(offset * -sign(impact_projection.x), 140 if wait else 0)
+        elif abs(ball_location.x) < 750 or team_sign * car_location.y > team_sign * ball_location.y or (abs(ball_location.x) > 3200 and abs(ball_location.x) + 100 > abs(car_location.x)):
+            destination.y -= max(abs(car_to_ball.y) / 2.9, 70 if wait else 110) * team_sign
         else:
-            destination += (destination - enemy_goal).normalized * max(car_to_ball.length / 3.3, 60 if wait else 120)
+            destination += (destination - enemy_goal).normalized * max(car_to_ball.length / 3.4, 60 if wait else 100)
         if abs(car_location.y > 5120): destination.x = min(700, max(-700, destination.x)) #Don't get stuck in goal
         car_to_destination = (destination - car_location)
 
@@ -156,7 +157,7 @@ class Anarchy(BaseAgent):
         self.controller.jump = False
         dodge_for_speed = (velocity_change > 700 and not backwards and my_car.boost < 10 and car_to_destination.size > 1000 and abs(steer_correction_radians) < 0.1)
         if (((car_to_ball.size < 300 and packet.game_ball.physics.location.z < 300) or dodge_for_speed) and car_velocity.size > 1200) or self.dodging:
-            dodge(self, car_direction.correction_to(car_to_destination if car_to_ball.size > 1500 else car_to_ball), ball_location)
+            dodge(self, car_direction.correction_to(car_to_destination if impact_time > 0.8 else car_to_ball), ball_location)
 
         # Half-flips
         if backwards and impact_time > 0.6 and car_velocity.size > 900 and abs(steer_correction_radians) < 0.1 or self.halfflipping:
