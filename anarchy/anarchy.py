@@ -77,6 +77,11 @@ class Anarchy(BaseAgent):
         impact, impact_time = get_impact(self.get_ball_prediction_struct(), self.car, Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y, packet.game_ball.physics.location.z), self.renderer)
         rotation_matrix = Matrix3D([my_car.physics.rotation.pitch, my_car.physics.rotation.yaw, my_car.physics.rotation.roll])
         # Hi robbie!
+        
+        # don't crash if winning by too much
+        game_score = QuickChatHandler.get_game_score(packet)
+        if game_score[team_sign] - game_score[not team_sign] >= 4:
+            return self.controller
 
         # Handle bouncing
         ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
