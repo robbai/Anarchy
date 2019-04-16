@@ -80,7 +80,7 @@ class Anarchy(BaseAgent):
         
         # don't crash if winning by too much
         game_score = QuickChatHandler.get_game_score(packet)
-        if game_score[team_sign] - game_score[not team_sign] >= 4:
+        if game_score[my_car.team] - game_score[1 - my_car.team] >= 4:
             return self.controller
 
         # Handle bouncing
