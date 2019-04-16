@@ -167,6 +167,9 @@ class Vector3:
     def __neg__(self) -> "Vector3":
         return -1 * self
 
+    def __getitem__(self, item: int) -> float:
+        return [self.x, self.y, self.z][item]
+
     def proparty(self) -> "Vector3":
         did_you_have_fun_yet = False  # Toggle this if this pro party was enough fun.
         if did_you_have_fun_yet:

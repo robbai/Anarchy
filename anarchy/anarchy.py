@@ -1,7 +1,4 @@
-import tempfile
-import zipfile
 import math
-from pathlib import Path
 from random import triangular as triforce
 from typing import List
 
@@ -10,7 +7,7 @@ from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 
 from utilities.vectors import *
-from utilities.render_mesh import *
+from utilities.render_mesh import unzip_and_make_mesh, ColoredWireframe
 from utilities.quick_chat_handler import QuickChatHandler
 from utilities.matrix import Matrix3D
 
@@ -46,8 +43,10 @@ class Anarchy(BaseAgent):
         self.time = 0
         self.next_dodge_time = 0
         self.quick_chat_handler: QuickChatHandler = QuickChatHandler(self)
+        self.zero_two: ColoredWireframe = unzip_and_make_mesh("nothing.zip", "zerotwo.obj")
 
     def initialize_agent(self):
+        '''
         with tempfile.TemporaryDirectory() as tmpdirname:
             tmpdir = Path(tmpdirname)
             try:
@@ -57,6 +56,7 @@ class Anarchy(BaseAgent):
             self.color_groups = parse_obj_mesh_file(tmpdir / 'zerotwo.obj', 70)
         self.polygons_rendered = 0
         self.current_color_group = 0
+        '''
         pass
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
@@ -127,7 +127,7 @@ class Anarchy(BaseAgent):
         if avoid_own_goal: self.renderer.draw_line_3d([car_location.x, car_location.y, 0], [impact_projection.x, impact_projection.y, 0], self.renderer.yellow())
         self.renderer.end_rendering()
 
-        render_mesh(self)
+        self.zero_two.render(self.renderer)
 
         # Choose whether to drive backwards or not
         wall_touch = (distance_from_wall(impact.flatten()) < 250 and team_sign * impact.y < 4000)
