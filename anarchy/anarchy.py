@@ -88,6 +88,8 @@ class Anarchy(BaseAgent):
             time = 0
 
         # Set a destination for Anarchy to reach
+        impact_projection = project_to_wall(car_location, impact.flatten() - car_location)
+        avoid_own_goal = impact_projection.y * team_sign < -5000
         wait = packet.game_ball.physics.location.z > 200
         if wait:
             destination = bounce_location
@@ -95,6 +97,8 @@ class Anarchy(BaseAgent):
             destination = impact.flatten()
         if kickoff:
             pass
+        elif avoid_own_goal:
+            destination += Vector2(0 if wait else team_sign * -100, 0 if not wait else (impact_time * 240 + 100) * -sign(impact_projection.x))
         elif team_sign * car_location.y > team_sign * ball_location.y or (abs(ball_location.x) > 3200 and abs(ball_location.x) + 100 > abs(car_location.x)):
             destination.y -= max(abs(car_to_ball.y) / 2.9, 70 if wait else 100) * team_sign
         else:
@@ -111,6 +115,7 @@ class Anarchy(BaseAgent):
         self.renderer.draw_string_2d(triforce(20, 50), triforce(90, 100), 2, 2, '(zero two is a close second)', self.renderer.lime())
         self.renderer.draw_string_2d(20, 100, 2, 2, "Max Speed: " + str(int(estimate_max_speed(self.car))), self.renderer.white())
         self.renderer.draw_line_3d([destination.x, destination.y, impact.z], [impact.x, impact.y, impact.z], self.renderer.blue())
+        if avoid_own_goal: self.renderer.draw_line_3d([car_location.x, car_location.y, 0], [impact_projection.x, impact_projection.y, 0], self.renderer.yellow())
         self.renderer.end_rendering()
 
         render_mesh(self)
@@ -268,3 +273,18 @@ def get_impact(path: BallPrediction, car, ball_position: Vector3, renderer = Non
             return current_slice, t
 
     return ball_position, 0 #Couldn't find a point of impact
+
+
+def project_to_wall(point: Vector2, direction: Vector2) -> Vector2:
+    wall = Vector2(sign(direction.x) * 4096, sign(direction.y) * 5120)
+    dir_normal = direction.normalized
+
+    x_difference = abs((wall.x - point.x) / dir_normal.x)
+    y_difference = abs((wall.y - point.y) / dir_normal.y)
+
+    if x_difference < y_difference:
+        # Side wall is closer
+        return Vector2(wall.x, point.y + dir_normal.y * x_difference)
+    else:
+        # Back wall is closer
+        return Vector2(point.x + dir_normal.x * y_difference, wall.y)
