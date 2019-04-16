@@ -1,5 +1,6 @@
 import tempfile
 import zipfile
+import math
 from pathlib import Path
 from random import triangular as triforce
 from typing import List
@@ -11,6 +12,7 @@ from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 from utilities.vectors import *
 from utilities.render_mesh import *
 from utilities.quick_chat_handler import QuickChatHandler
+from utilities.matrix import Matrix3D
 
 # first!
 
@@ -73,6 +75,7 @@ class Anarchy(BaseAgent):
         enemy_goal = Vector2(0, team_sign * 5120)
         kickoff = (ball_location.x == 0 and ball_location.y == 0)
         impact, impact_time = get_impact(self.get_ball_prediction_struct(), self.car, Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y, packet.game_ball.physics.location.z), self.renderer)
+        rotation_matrix = Matrix3D([my_car.physics.rotation.pitch, my_car.physics.rotation.yaw, my_car.physics.rotation.roll])
         # Hi robbie!
 
         # Handle bouncing
@@ -90,7 +93,7 @@ class Anarchy(BaseAgent):
         # Set a destination for Anarchy to reach
         impact_projection = project_to_wall(car_location, impact.flatten() - car_location)
         avoid_own_goal = impact_projection.y * team_sign < -5000
-        wait = packet.game_ball.physics.location.z > 200
+        wait = (packet.game_ball.physics.location.z > 200 and my_car.physics.location.z < 200)
         if wait:
             destination = bounce_location
         else:
@@ -121,8 +124,10 @@ class Anarchy(BaseAgent):
         render_mesh(self)
 
         # Choose whether to drive backwards or not
-        steer_correction_radians = car_direction.correction_to(car_to_destination)
-        backwards = (math.cos(steer_correction_radians) < 0 and my_car.physics.location.z < 120)
+        wall_touch = (distance_from_wall(impact.flatten()) < 250 and team_sign * impact.y < 4000)
+        local = rotation_matrix.dot(Vector3(car_to_destination.x, car_to_destination.y, (impact.z if wall_touch else 17.010000228881836) - my_car.physics.location.z))
+        steer_correction_radians = math.atan2(local.y, local.x)
+        backwards = (math.cos(steer_correction_radians) < 0)
         if backwards:
             if steer_correction_radians != 0:
                 steer_correction_radians = -(steer_correction_radians - sign(steer_correction_radians) * math.pi)
@@ -279,8 +284,8 @@ def project_to_wall(point: Vector2, direction: Vector2) -> Vector2:
     wall = Vector2(sign(direction.x) * 4096, sign(direction.y) * 5120)
     dir_normal = direction.normalized
 
-    x_difference = abs((wall.x - point.x) / dir_normal.x)
-    y_difference = abs((wall.y - point.y) / dir_normal.y)
+    x_difference = (abs((wall.x - point.x) / dir_normal.x) if dir_normal.x != 0 else 10000)
+    y_difference = (abs((wall.y - point.y) / dir_normal.y) if dir_normal.y != 0 else 10000)
 
     if x_difference < y_difference:
         # Side wall is closer
@@ -288,3 +293,7 @@ def project_to_wall(point: Vector2, direction: Vector2) -> Vector2:
     else:
         # Back wall is closer
         return Vector2(point.x + dir_normal.x * y_difference, wall.y)
+
+
+def distance_from_wall(point: Vector2) -> float:
+    return min(4096 - abs(point.x), 5120 - abs(point.y))

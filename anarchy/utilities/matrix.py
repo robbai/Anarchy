@@ -1,6 +1,6 @@
 import math
 
-from vectors import Vector3
+from .vectors import Vector3
 
 class Matrix3D:
     def __init__(self,r):
