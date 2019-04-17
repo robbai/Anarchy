@@ -10,6 +10,7 @@ from utilities.vectors import *
 from utilities.render_mesh import unzip_and_make_mesh, ColoredWireframe
 from utilities.quick_chat_handler import QuickChatHandler
 from utilities.matrix import Matrix3D
+from utilities.aerial import aerial_option_b as Aerial
 
 # first!
 
@@ -44,6 +45,7 @@ class Anarchy(BaseAgent):
         self.next_dodge_time = 0
         self.quick_chat_handler: QuickChatHandler = QuickChatHandler(self)
         self.zero_two: ColoredWireframe = unzip_and_make_mesh("nothing.zip", "zerotwo.obj")
+        self.aerial: Aerial = None
 
     def initialize_agent(self):
         '''
@@ -77,11 +79,13 @@ class Anarchy(BaseAgent):
         impact, impact_time = get_impact(self.get_ball_prediction_struct(), self.car, Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y, packet.game_ball.physics.location.z), self.renderer)
         rotation_matrix = Matrix3D([my_car.physics.rotation.pitch, my_car.physics.rotation.yaw, my_car.physics.rotation.roll])
         # Hi robbie!
-        
+
+        '''
         # don't crash if winning by too much
         game_score = QuickChatHandler.get_game_score(packet)
         if game_score[my_car.team] - game_score[1 - my_car.team] >= 4:
             return self.controller
+        '''
 
         # Handle bouncing
         ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
@@ -94,6 +98,19 @@ class Anarchy(BaseAgent):
             break
         if bounce_location is None:
             time = 0
+
+        # Handle aerials
+        if self.aerial is not None:
+            if self.car.has_wheel_contact and self.car.jumped:
+                # Give up on an aerial
+                self.aerial = None
+            else:
+                # Get the output of the aerial
+                return self.aerial.execute()
+        elif self.aerial is None and time > 2.5 and impact.z > 500 and car_velocity.length < 1000 and team_sign * car_location.y < team_sign * ball_location.y:
+            # Start a new aerial
+            self.aerial = Aerial(self.time)
+            return self.aerial.execute(packet, self.index)
 
         # Set a destination for Anarchy to reach
         impact_projection = project_to_wall(car_location, impact.flatten() - car_location)
