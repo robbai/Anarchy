@@ -8,30 +8,32 @@ import math
 
 from rlbot.agents.base_agent import SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
+from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 
 from .vectors import *
 from .utils import sign, clamp
+from .matrix import Matrix3D
 
 # Holds relevant information from the packet
 class Info:
     def __init__(self, packet: GameTickPacket, index):
         self.game_time = packet.game_info.seconds_elapsed
         self.car = packet.game_cars[index]
-        self.car_location = Vector3(car.physics.location.x, car.physics.location.y, car.physics.location.z)
-        self.car_velocity = Vector3(car.physics.velocity.x, car.physics.velocity.y, car.physics.velocity.z)
+        self.car_location = Vector3(self.car.physics.location.x, self.car.physics.location.y, self.car.physics.location.z)
+        self.car_velocity = Vector3(self.car.physics.velocity.x, self.car.physics.velocity.y, self.car.physics.velocity.z)
         self.car_matrix = Matrix3D([self.car.physics.rotation.pitch, self.car.physics.rotation.yaw, self.car.physics.rotation.roll])
-        self.rotation_velocity = self.car_matrix.dot(car.angular_velocity)
+        self.rotation_velocity = self.car_matrix.dot(self.car.physics.angular_velocity)
         self.ball = packet.game_ball
-        self.ball_location = Vector3(ball.physics.location.x, ball.physics.location.y, ball.physics.location.z)        
-        self.ball_velocity = Vector3(ball.physics.velocity.x, ball.physics.velocity.y, ball.physics.velocity.z)
+        self.ball_location = Vector3(self.ball.physics.location.x, self.ball.physics.location.y, self.ball.physics.location.z)        
+        self.ball_velocity = Vector3(self.ball.physics.velocity.x, self.ball.physics.velocity.y, self.ball.physics.velocity.z)
 
 def default_pd(info: Info, local: Vector3, error: bool = False):    #Generates controller outputs to get the car facing a given local coordinate while airborne. 
     e1 = math.atan2(local.y, local.x)            #Input is the agent (specifically its rotataional velocity converted to local coordinates), the local coordinates of the target, and a bool to return the yaw angle if you want
-    steer = steerPD(e1,0)                                 #local coordinate is in forward,left,up format. rvel is the rotational velocity of the forward axis
-    yaw = steerPD(e1, -info.rotation_velocity.z / 5)
+    steer = steer_pd(e1,0)                                 #local coordinate is in forward,left,up format. rvel is the rotational velocity of the forward axis
+    yaw = steer_pd(e1, -info.rotation_velocity.z / 6)
     e2 = math.atan2(local.z, local.x)
-    pitch = steerPD(e2, info.rotation_velocity.y / 5)
-    roll = 0   #steerPD(math.atan2(agent.me.matrix.data[2][1],agent.me.matrix.data[2][2]),agent.me.rvel[0]/5)#keeps the bot upright, uses ep6 rotation matricies tho
+    pitch = steer_pd(e2, info.rotation_velocity.y / 6)
+    roll = steer_pd(-info.car.physics.rotation.roll, info.rotation_velocity.x / 6)#keeps the bot upright
     if error == False:
         return steer,yaw,pitch,roll
     else:
@@ -44,14 +46,19 @@ def dpp3D(target_loc: Vector3,target_vel: Vector3, our_loc: Vector3 ,our_vel: Ve
     else:
         return 0
     
-def future(location: Vector3, velocity: Vector3, time: float) -> Vector3: #calculates future position of object assuming it follows a projectile trajectory
-    x = location.x + (velocity.x * time)
-    y = location.y + (velocity.y * time)
-    z = location.z + (velocity.z * time) - (325 * time * time)
-    return Vector3(x,y,z)
+def future(location: Vector3, velocity: Vector3, time: float, path: BallPrediction = None) -> Vector3: #calculates future position of object assuming it follows a projectile trajectory
+    if path is None:
+        x = location.x + (velocity.x * time)
+        y = location.y + (velocity.y * time)
+        z = location.z + (velocity.z * time) - (325 * time * time)
+        return Vector3(x,y,z)
+    else:
+        s: Slice = path.slices[int(time * 60)]
+        return Vector3(s.physics.location.x, s.physics.location.y, s.physics.location.z)
 
-def backsolve_future(location: Vector3, velocity: Vector3, future: Vector3, time: float) -> Vector3: #finds acceleration needed to arrive at a future given a location and time
+def backsolve_future(location: Vector3, velocity: Vector3, future: Vector3, time: float, radius: float = 92.75) -> Vector3: #finds acceleration needed to arrive at a future given a location and time
     d = future-location
+    d -= (d.normalized * radius)
     dx = (2 * ((d.x / time) - velocity.x)) / time
     dy = (2 * ((d.y / time) - velocity.y))/time
     dz = (2 * ((325 * time) + ((d.z / time) - velocity.z))) / time
@@ -65,35 +72,44 @@ class aerial_option_b:#call at your own risk: yeets towards ball after taking a 
     def __init__(self, game_time_started: float):
         self.time = -9
         self.jt = game_time_started
+        self.target: Vector3 = None
         
-    def execute(self, packet: GameTickPacket, index) -> SimpleControllerState:
+    def execute(self, packet: GameTickPacket, index, ball_prediction: BallPrediction = None) -> SimpleControllerState:
         info = Info(packet, index)
                 
         if self.time == -9: #if we don't have a target time, guess one using really bad math
             eta = math.sqrt(((info.ball_location - info.car_location).length) / 529.165)
             targetetaloc = future(info.ball_location, info.ball_velocity, eta)
-            before = dpp3D(info.ball_location, info.ball_velocity, info.car_location, info.car_velocity)
-            after = dpp3D(info.targetetaloc, info.ball_velocity, info.car_location, info.car_velocity)
+            before = abs(dpp3D(info.ball_location, info.ball_velocity, info.car_location, info.car_velocity))
+            after = abs(dpp3D(targetetaloc, info.ball_velocity, info.car_location, info.car_velocity))
             if sign(before) == sign(after): #sign returns 1 or -1
-                eta = math.sqrt(((info.ball_location - info.car_location).length + before) / 529.165)
+                eta = math.sqrt(clamp(((info.ball_location - info.car_location).length + before) / 529.165, 0.01, 9999))
             else:
-                eta = math.sqrt(((info.ball_location - info.car_location).length + before + after) / 529.165)
+                eta = math.sqrt(clamp(((info.ball_location - info.car_location).length + before + after) / 529.165, 0.01, 9999))
             test = dpp3D(targetetaloc, info.ball_velocity, info.car_location, info.car_velocity)
-            eta = math.sqrt(((info.ball_location - info.car_location).length + test) / 529.165)
+            eta = math.sqrt(((info.ball_location - info.car_location).length + max(0, test)) / 529.165)
             self.time = info.game_time + eta
             target = Vector3(0,0,0)
         else:
             time_remain = clamp(self.time - info.game_time, -2.0,10.0) #agent will continue aerial up to 2 seconds after predicted intercept time
             if time_remain != 0:
-                target = future(info.ball_location, info.ball_velocity, info.time_remain)
+                target = future(info.ball_location, info.ball_velocity, time_remain, ball_prediction)
             else:
                 time_remain = 0.1
-                target = future(info.ball_location, info.ball_velocity, 0.1)
+                target = future(info.ball_location, info.ball_velocity, 0.1, ball_prediction)
+
+            '''
+            # Shooting offset
+            enemy_goal = Vector3(0, (1 if info.car.team == 0 else -1) * 5120, clamp(target.z / 2, 100, 600))
+            target += (target - enemy_goal).normalized * 70
+            '''
+            
             if time_remain > -1.9:
                 target = backsolve_future(info.car_location, info.car_velocity, target, time_remain)
             else:
                 target = info.car_velocity
-        controller, self.jt = deltaC(agent, target, self.game_time_started)
+        controller, self.jt = deltaC(info, target, self.jt)
+        self.target = (target)
         return controller
     
 def deltaC(info: Info, target: Vector3, jt): #this controller takes a vector containing the required acceleration to reach a target, and then gets the car there
@@ -106,7 +122,7 @@ def deltaC(info: Info, target: Vector3, jt): #this controller takes a vector con
             c.jump = False
             jt = info.game_time
     else:
-        c.steer,c.yaw,c.pitch,c.roll,error = default_pd(agent, target_local, True)
+        c.steer,c.yaw,c.pitch,c.roll,error = default_pd(info, target_local, True)
         if target.length > 25: #stops boosting when "close enough"
             c.boost = True
         if error > 0.9: #don't boost if we're not facing the right way
@@ -121,6 +137,7 @@ def deltaC(info: Info, target: Vector3, jt): #this controller takes a vector con
             c.boost = False
             c.yaw = c.pitch = c.roll = 0
         else:
-            c.jump = False            
+            c.jump = False
+        c.throttle = 1
     return c, jt
 
