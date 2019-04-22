@@ -50,17 +50,6 @@ class Anarchy(BaseAgent):
         self.steer_correction_radians: float = 0
 
     def initialize_agent(self):
-        '''
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            tmpdir = Path(tmpdirname)
-            try:
-                with zipfile.ZipFile(Path(__file__).absolute().parent / 'nothing.zip', 'r') as zip_ref: zip_ref.extractall(tmpdir)
-            except:
-                with zipfile.ZipFile(str(Path(__file__).absolute().parent / 'nothing.zip'), 'r') as zip_ref: zip_ref.extractall(tmpdir)
-            self.color_groups = parse_obj_mesh_file(tmpdir / 'zerotwo.obj', 70)
-        self.polygons_rendered = 0
-        self.current_color_group = 0
-        '''
         pass
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
