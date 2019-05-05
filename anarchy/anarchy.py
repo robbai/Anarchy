@@ -139,6 +139,7 @@ class Anarchy(BaseAgent):
         self.renderer.draw_string_2d(triforce(20, 50), triforce(10, 20), 5, 5, 'ALICE NAKIRI IS BEST GIRL', self.renderer.white())
         self.renderer.draw_string_2d(triforce(20, 50), triforce(90, 100), 2, 2, '(zero two is a close second)', self.renderer.lime())
         self.renderer.draw_string_2d(20, 100, 2, 2, "Max Speed: " + str(int(estimate_max_speed(self.car))), self.renderer.white())
+        if kickoff: self.renderer.draw_string_2d(20, 140, 2, 2, "Kickoff", self.renderer.white())
         self.renderer.draw_line_3d([destination.x, destination.y, impact.z], [impact.x, impact.y, impact.z], self.renderer.blue())
         if avoid_own_goal: self.renderer.draw_line_3d([car_location.x, car_location.y, 0], [impact_projection.x, impact_projection.y, 0], self.renderer.yellow())
         self.renderer.end_rendering()
@@ -185,11 +186,18 @@ class Anarchy(BaseAgent):
             halfflip(self)
 
         # Recovery
-        if not (self.car.has_wheel_contact or self.dodging or self.halfflipping):  
-            self.controller.roll = clamp11(-self.car.physics.rotation.roll + rotation_velocity.x / 6)
-            self.controller.pitch = clamp11(-self.car.physics.rotation.pitch + rotation_velocity.y / 6)
-            if my_car.physics.location.z > 600: self.controller.yaw = clamp11(self.steer_correction_radians * 2 - rotation_velocity.z / 3)
-            self.controller.boost = False
+        if not (self.dodging or self.halfflipping):
+            if not (self.car.has_wheel_contact or kickoff):
+                self.controller.steer = 0
+                self.controller.roll = clamp11(-self.car.physics.rotation.roll + rotation_velocity.x / 6)
+                if abs(rotation_velocity.x) < 1: 
+                    self.controller.pitch = clamp11(-self.car.physics.rotation.pitch + rotation_velocity.y / 6)
+                    self.controller.yaw = clamp11(self.steer_correction_radians * 2.5 - rotation_velocity.z / 4)
+                self.controller.boost = False
+            else:
+                self.controller.roll = 0
+                self.controller.pitch = 0
+                self.controller.yaw = 0
 
         return self.controller
 
