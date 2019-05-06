@@ -57,26 +57,25 @@ class Anarchy(BaseAgent):
 
         # Collect data from the packet
         self.time = packet.game_info.seconds_elapsed
-        ball_location = Vector2(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y)
-        my_car = packet.game_cars[self.index]
-        self.car = my_car
-        car_location = Vector2(my_car.physics.location.x, my_car.physics.location.y)
-        car_velocity = Vector3(my_car.physics.velocity.x, my_car.physics.velocity.y, my_car.physics.velocity.z)
-        car_direction = get_car_facing_vector(my_car)
+        ball_location = Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y, packet.game_ball.physics.location.z)
+        self.car = packet.game_cars[self.index]
+        car_location = Vector3(self.car.physics.location.x, self.car.physics.location.y, self.car.physics.location.z)
+        car_velocity = Vector3(self.car.physics.velocity.x, self.car.physics.velocity.y, self.car.physics.velocity.z)
+        car_direction = get_car_facing_vector(self.car)
         car_to_ball = ball_location - car_location
-        team_sign = (1 if my_car.team == 0 else -1)
+        team_sign = (1 if self.car.team == 0 else -1)
         enemy_goal = Vector2(0, team_sign * 5120)
         kickoff = (ball_location.x == 0 and ball_location.y == 0)
         impact, impact_time = get_impact(self.get_ball_prediction_struct(), self.car, Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y, packet.game_ball.physics.location.z), self.renderer)
         impact_projection = project_to_wall(car_location, impact.flatten() - car_location)
-        rotation_matrix = Matrix3D([my_car.physics.rotation.pitch, my_car.physics.rotation.yaw, my_car.physics.rotation.roll])
+        rotation_matrix = Matrix3D([self.car.physics.rotation.pitch, self.car.physics.rotation.yaw, self.car.physics.rotation.roll])
         rotation_velocity = rotation_matrix.dot(self.car.physics.angular_velocity)
         # Hi robbie!
 
         '''
         # don't crash if winning by too much
         game_score = QuickChatHandler.get_game_score(packet)
-        if game_score[my_car.team] - game_score[1 - my_car.team] >= 4:
+        if game_score[self.car.team] - game_score[1 - self.car.team] >= 4:
             return self.controller
         '''
 
@@ -101,12 +100,11 @@ class Anarchy(BaseAgent):
                 # Get the output of the aerial
                 aerial_output = self.aerial.execute(packet, self.index, self.get_ball_prediction_struct())
                 if self.aerial.target is not None:
-                    car3 = Vector3(my_car.physics.location.x, my_car.physics.location.y, my_car.physics.location.z)
                     self.renderer.begin_rendering()
-                    self.renderer.draw_line_3d([car3.x, car3.y, car3.z], [car3.x + self.aerial.target.x, car3.y + self.aerial.target.y, car3.z + self.aerial.target.z], self.renderer.white())
+                    self.renderer.draw_line_3d(car_location, car_location + self.aerial.target, self.renderer.white())
                     self.renderer.end_rendering()
                 return aerial_output
-        if self.aerial is None and self.car.has_wheel_contact and impact.z - my_car.physics.location.z > 500 and car_velocity.length > 100 and my_car.boost > 20\
+        if self.aerial is None and self.car.has_wheel_contact and impact.z - self.car.physics.location.z > 500 and car_velocity.length > 100 and self.car.boost > 20\
             and abs(self.steer_correction_radians) < 0.4 and impact_time < 5 and (impact_projection.y * team_sign > -5000 or abs(impact_projection.x) > 1000):
             # Start a new aerial
             self.aerial = Aerial(self.time)
@@ -114,7 +112,7 @@ class Anarchy(BaseAgent):
 
         # Set a destination for Anarchy to reach
         avoid_own_goal = impact_projection.y * team_sign < -5000
-        wait = (packet.game_ball.physics.location.z > 200 and my_car.physics.location.z < 200)
+        wait = (ball_location.z > 200 and self.car.physics.location.z < 200)
         if wait:
             destination = bounce_location
         else:
@@ -148,7 +146,7 @@ class Anarchy(BaseAgent):
 
         # Choose whether to drive backwards or not
         wall_touch = (distance_from_wall(impact.flatten()) < 250 and team_sign * impact.y < 4000)
-        local = rotation_matrix.dot(Vector3(car_to_destination.x, car_to_destination.y, (impact.z if wall_touch else 17.010000228881836) - my_car.physics.location.z))
+        local = rotation_matrix.dot(Vector3(car_to_destination.x, car_to_destination.y, (impact.z if wall_touch else 17.010000228881836) - self.car.physics.location.z))
         self.steer_correction_radians = math.atan2(local.y, local.x)
         backwards = (math.cos(self.steer_correction_radians) < 0)
         if backwards:
@@ -161,7 +159,7 @@ class Anarchy(BaseAgent):
         target_velocity = (((bounce_location - car_location).length / time) if time > 0 else 2300)
         velocity_change = (target_velocity - car_velocity.flatten().length)
         if velocity_change > 200 or target_velocity > 1410:
-            self.controller.boost = (abs(self.steer_correction_radians) < 0.2 and not my_car.is_super_sonic and not backwards)
+            self.controller.boost = (abs(self.steer_correction_radians) < 0.2 and not self.car.is_super_sonic and not backwards)
             self.controller.throttle = (1 if not backwards else -1)
         elif velocity_change > -50:
             self.controller.boost = False
@@ -173,12 +171,12 @@ class Anarchy(BaseAgent):
         # Steering
         turn = clamp11(self.steer_correction_radians * 2.5)
         self.controller.steer = turn
-        self.controller.handbrake = (abs(turn) > 1.2 and not my_car.is_super_sonic)
+        self.controller.handbrake = (abs(turn) > 1.2 and not self.car.is_super_sonic)
 
         # Dodging
         self.controller.jump = False
-        dodge_for_speed = (velocity_change > 700 and not backwards and my_car.boost < 10 and car_to_destination.size > 1000 and abs(self.steer_correction_radians) < 0.1)
-        if (((car_to_ball.size < 300 and packet.game_ball.physics.location.z < 300) or dodge_for_speed) and car_velocity.size > 1200) or self.dodging:
+        dodge_for_speed = (velocity_change > 700 and not backwards and self.car.boost < 10 and car_to_destination.size > 1000 and abs(self.steer_correction_radians) < 0.1)
+        if (((car_to_ball.size < 300 and ball_location.z < 300) or dodge_for_speed) and car_velocity.size > 1200) or self.dodging:
             dodge(self, car_direction.correction_to(car_to_destination if impact_time > 0.5 else car_to_ball), ball_location)
 
         # Half-flips
