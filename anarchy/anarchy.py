@@ -1,6 +1,7 @@
 import math
 from random import triangular as triforce, uniform
 from typing import List
+import getpass
 
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
@@ -40,12 +41,12 @@ class Anarchy(BaseAgent):
         self.controller = SimpleControllerState()
         self.dodging = False
         self.halfflipping = False
-        self.dodge_pitch = 0
-        self.dodge_roll = 0
+        self.dodge_angle = 0
         self.time = 0
         self.next_dodge_time = 0
         self.quick_chat_handler: QuickChatHandler = QuickChatHandler(self)
-        self.zero_two: ColoredWireframe = unzip_and_make_mesh("nothing.zip", "zerotwo.obj")
+        self.render_statue = ("wood3" not in getpass.getuser())
+        self.zero_two: ColoredWireframe = (unzip_and_make_mesh("nothing.zip", "zerotwo.obj") if self.render_statue else None)
         self.aerial: Aerial = None
         self.steer_correction_radians: float = 0
 
@@ -84,7 +85,7 @@ class Anarchy(BaseAgent):
         bounce_location = None
         for b in ball_bounces:
             time: float = b.game_seconds - self.time
-            if time < impact_time - 0.5:
+            if time < impact_time - 0.3:
                 continue
             bounce_location: Vector2 = Vector2(b.physics.location)
             break
@@ -125,7 +126,7 @@ class Anarchy(BaseAgent):
         elif abs(ball_location.x) < 750 or team_sign * car_location.y > team_sign * ball_location.y or (abs(ball_location.x) > 3200 and abs(ball_location.x) + 100 > abs(car_location.x)):
             destination.y -= max(abs(car_to_ball.y) / 2.9, 70 if wait else 100) * team_sign
         else:
-            destination += (destination - enemy_goal).normalized * max(car_to_ball.length / 3.3, 60 if wait else 100)
+            destination += (destination - enemy_goal).normalized * max(car_to_ball.flatten().length / 3.3, 60 if wait else 100)
         if abs(car_location.y > 5120): destination.x = min(700, max(-700, destination.x)) #Don't get stuck in goal
         car_to_destination = (destination - car_location)
 
@@ -142,7 +143,7 @@ class Anarchy(BaseAgent):
         if avoid_own_goal: self.renderer.draw_line_3d([car_location.x, car_location.y, 0], [impact_projection.x, impact_projection.y, 0], self.renderer.yellow())
         self.renderer.end_rendering()
 
-        self.zero_two.render(self.renderer)
+        if self.render_statue: self.zero_two.render(self.renderer)
 
         # Choose whether to drive backwards or not
         wall_touch = (distance_from_wall(impact.flatten()) < 250 and team_sign * impact.y < 4000)
@@ -169,28 +170,27 @@ class Anarchy(BaseAgent):
             self.controller.throttle = (-1 if not backwards else 1)
 
         # Steering
-        turn = clamp11(self.steer_correction_radians * 2.5)
+        turn = clamp11(self.steer_correction_radians * 3)
         self.controller.steer = turn
         self.controller.handbrake = (abs(turn) > 1.2 and not self.car.is_super_sonic)
 
         # Dodging
         self.controller.jump = False
-        dodge_for_speed = (velocity_change > 700 and not backwards and self.car.boost < 10 and car_to_destination.size > 1000 and abs(self.steer_correction_radians) < 0.1)
-        if (((car_to_ball.size < 300 and ball_location.z < 300) or dodge_for_speed) and car_velocity.size > 1200) or self.dodging:
-            dodge(self, car_direction.correction_to(car_to_destination if impact_time > 0.5 else car_to_ball), ball_location)
+        dodge_for_speed = (velocity_change > 500 and not backwards and self.car.boost < 12 and self.time > self.next_dodge_time + 1 and car_to_destination.size > 1200 and abs(self.steer_correction_radians) < 0.1)
+        if (((car_to_ball.flatten().size < 300 and ball_location.z < 300) or dodge_for_speed) and car_velocity.size > 1200) or self.dodging:
+            dodge_at_ball = (impact_time < 0.4)
+            dodge_angle = (car_direction.correction_to(car_to_ball) if dodge_at_ball else car_direction.correction_to(car_to_destination))
+            dodge(self, dodge_angle, rotation_velocity, 3 if dodge_at_ball else 1)
 
         # Half-flips
         if backwards and (time if wait else impact_time) > 0.6 and car_velocity.size > 900 and abs(self.steer_correction_radians) < 0.1 or self.halfflipping:
-            halfflip(self)
+            halfflip(self, rotation_velocity)
 
         # Recovery
         if not (self.dodging or self.halfflipping):
             if not (self.car.has_wheel_contact or kickoff):
                 self.controller.steer = 0
-                self.controller.roll = clamp11(-self.car.physics.rotation.roll + rotation_velocity.x / 6)
-                if abs(rotation_velocity.x) < 1: 
-                    self.controller.pitch = clamp11(-self.car.physics.rotation.pitch + rotation_velocity.y / 6)
-                    self.controller.yaw = clamp11(self.steer_correction_radians * 2.5 - rotation_velocity.z / 4)
+                recover(self, rotation_velocity)
                 self.controller.boost = False
             else:
                 self.controller.roll = 0
@@ -200,29 +200,33 @@ class Anarchy(BaseAgent):
         return self.controller
 
 
-def dodge(self, angle_to_ball: float, target=None):
+def recover(self, rotation_velocity: Vector3, roll = True, pitch = True, yaw = True):
+    if roll: self.controller.roll = clamp11(self.car.physics.rotation.roll * -3 + rotation_velocity.x * 0.3)
+    if abs(self.car.physics.rotation.roll) < 1 or not roll: 
+        if pitch: self.controller.pitch = clamp11(self.car.physics.rotation.pitch * -3 + rotation_velocity.y * 0.9)
+        if yaw: self.controller.yaw = clamp11(self.steer_correction_radians * 3 - rotation_velocity.z * 0.7)
+
+
+def dodge(self, angle: float, rotation_velocity: Vector3, multiply = 1):
     if self.car.has_wheel_contact and not self.dodging:
-        if target is None:
-            roll = 0
-            pitch = 1
-        else:
-            roll = math.sin(angle_to_ball)
-            pitch = math.cos(angle_to_ball)
-        self.dodge_pitch = -pitch
-        self.dodge_roll = roll
+        self.dodge_angle = angle
         self.dodging = True
         self.controller.jump = True
+        self.controller.pitch = -0.25 * sign(math.cos(self.dodge_angle))
         self.next_dodge_time = self.time + 0.1
 
     elif self.time > self.next_dodge_time:
         self.controller.jump = True
-        self.controller.pitch = clamp11(self.dodge_pitch)
-        self.controller.roll = clamp11(self.dodge_roll)
+        if self.time < self.next_dodge_time + 0.5:
+            self.controller.yaw = clamp11(math.sin(self.dodge_angle) * multiply)
+            self.controller.pitch = clamp11(-math.cos(self.dodge_angle))
+        else:
+            recover(self, rotation_velocity, yaw = False)
         if self.car.has_wheel_contact or self.time > self.next_dodge_time + 1:
             self.dodging = False
+        
 
-
-def halfflip(self):
+def halfflip(self, rotation_velocity: Vector3):
     if not self.halfflipping and self.car.has_wheel_contact:
         self.halfflipping = True
         self.controller.jump = True
@@ -232,6 +236,8 @@ def halfflip(self):
     elif self.time > self.next_dodge_time + 0.6:
         self.controller.pitch = -1
         self.controller.roll = 1
+        if self.time > self.next_dodge_time + 0.9:
+            recover(self, rotation_velocity, yaw = False)
         if self.car.has_wheel_contact:
             self.halfflipping = False
     elif self.time > self.next_dodge_time + 0.3:

@@ -98,14 +98,12 @@ class aerial_option_b:#call at your own risk: yeets towards ball after taking a 
                 time_remain = 0.1
                 target = future(info.ball_location, info.ball_velocity, 0.1, ball_prediction)
 
-            '''
             # Shooting offset
             enemy_goal = Vector3(0, (1 if info.car.team == 0 else -1) * 5120, clamp(target.z / 2, 100, 600))
             target += (target - enemy_goal).normalized * 70
-            '''
             
             if time_remain > -1.9:
-                target = backsolve_future(info.car_location, info.car_velocity, target, time_remain)
+                target = backsolve_future(info.car_location, info.car_velocity, target, time_remain, radius = 0)
             else:
                 target = info.car_velocity
         controller, self.jt = deltaC(info, target, self.jt)
