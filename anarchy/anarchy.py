@@ -115,9 +115,10 @@ class Anarchy(BaseAgent):
         avoid_own_goal = impact_projection.y * team_sign < -5000
         wait = (ball_location.z > 200 and self.car.physics.location.z < 200)
         if wait:
-            destination = bounce_location
+            destination = Vector3(bounce_location.x, bounce_location.y, 0)
         else:
-            destination = impact.flatten()
+            destination = impact
+            time = 0
         if kickoff:
             pass
         elif avoid_own_goal:
@@ -146,7 +147,7 @@ class Anarchy(BaseAgent):
         if self.render_statue: self.zero_two.render(self.renderer)
 
         # Choose whether to drive backwards or not
-        wall_touch = (distance_from_wall(impact.flatten()) < 250 and team_sign * impact.y < 4000)
+        wall_touch = (distance_from_wall(impact.flatten()) < 500 and team_sign * impact.y < 4000)
         local = rotation_matrix.dot(Vector3(car_to_destination.x, car_to_destination.y, (impact.z if wall_touch else 17.010000228881836) - self.car.physics.location.z))
         self.steer_correction_radians = math.atan2(local.y, local.x)
         backwards = (math.cos(self.steer_correction_radians) < 0)
@@ -188,7 +189,7 @@ class Anarchy(BaseAgent):
 
         # Recovery
         if not (self.dodging or self.halfflipping):
-            if not (self.car.has_wheel_contact or kickoff):
+            if not self.car.has_wheel_contact:
                 self.controller.steer = 0
                 recover(self, rotation_velocity)
                 self.controller.boost = False
@@ -202,7 +203,7 @@ class Anarchy(BaseAgent):
 
 def recover(self, rotation_velocity: Vector3, roll = True, pitch = True, yaw = True):
     if roll: self.controller.roll = clamp11(self.car.physics.rotation.roll * -3 + rotation_velocity.x * 0.3)
-    if abs(self.car.physics.rotation.roll) < 1 or not roll: 
+    if abs(self.car.physics.rotation.roll) < 1.5 or not roll: 
         if pitch: self.controller.pitch = clamp11(self.car.physics.rotation.pitch * -3 + rotation_velocity.y * 0.9)
         if yaw: self.controller.yaw = clamp11(self.steer_correction_radians * 3 - rotation_velocity.z * 0.7)
 
@@ -212,17 +213,17 @@ def dodge(self, angle: float, rotation_velocity: Vector3, multiply = 1):
         self.dodge_angle = angle
         self.dodging = True
         self.controller.jump = True
-        self.controller.pitch = -0.25 * sign(math.cos(self.dodge_angle))
+        self.controller.pitch = -sign(math.cos(self.dodge_angle))
         self.next_dodge_time = self.time + 0.1
 
     elif self.time > self.next_dodge_time:
         self.controller.jump = True
-        if self.time < self.next_dodge_time + 0.5:
-            self.controller.yaw = clamp11(math.sin(self.dodge_angle) * multiply)
+        if self.time < self.next_dodge_time + 1:
+            self.controller.roll = clamp11(math.sin(self.dodge_angle) * multiply)
             self.controller.pitch = clamp11(-math.cos(self.dodge_angle))
         else:
-            recover(self, rotation_velocity, yaw = False)
-        if self.car.has_wheel_contact or self.time > self.next_dodge_time + 1:
+            recover(self, rotation_velocity, yaw = (self.car.physics.location.z > 1000))
+        if self.car.has_wheel_contact or self.time > self.next_dodge_time + 1.5:
             self.dodging = False
         
 
@@ -237,7 +238,7 @@ def halfflip(self, rotation_velocity: Vector3):
         self.controller.pitch = -1
         self.controller.roll = 1
         if self.time > self.next_dodge_time + 0.9:
-            recover(self, rotation_velocity, yaw = False)
+            recover(self, rotation_velocity, yaw = (self.car.physics.location.z > 1000))
         if self.car.has_wheel_contact:
             self.halfflipping = False
     elif self.time > self.next_dodge_time + 0.3:

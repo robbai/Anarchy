@@ -133,10 +133,12 @@ class Vector3:
         else:
             raise TypeError("Wrong type(s) given for Vector3.y and/or Vector3.z")
 
-    def __add__(self, v: "Vector3") -> "Vector3":
+    def __add__(self, v) -> "Vector3":
+        if isinstance(v, Vector2): return Vector3(self.x + v.x, self.y + v.y, self.z)
         return Vector3(self.x + v.x, self.y + v.y, self.z + v.z)
 
     def __sub__(self, val):
+        if isinstance(val, Vector2): return Vector3(self.x - val.x, self.y - val.y, self.z)
         return Vector3(self.x - val.x, self.y - val.y, self.z - val.z)
 
     def __mul__(self, v: float) -> "Vector3":
