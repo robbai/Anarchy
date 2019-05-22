@@ -59,6 +59,7 @@ class Anarchy(BaseAgent):
         # Collect data from the packet
         self.time = packet.game_info.seconds_elapsed
         ball_location = Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y, packet.game_ball.physics.location.z)
+        ball_velocity = Vector3(packet.game_ball.physics.velocity.x, packet.game_ball.physics.velocity.y, packet.game_ball.physics.velocity.z)
         self.car = packet.game_cars[self.index]
         car_location = Vector3(self.car.physics.location.x, self.car.physics.location.y, self.car.physics.location.z)
         car_velocity = Vector3(self.car.physics.velocity.x, self.car.physics.velocity.y, self.car.physics.velocity.z)
@@ -105,7 +106,8 @@ class Anarchy(BaseAgent):
                     self.renderer.draw_line_3d(car_location, car_location + self.aerial.target, self.renderer.white())
                     self.renderer.end_rendering()
                 return aerial_output
-        if self.aerial is None and self.car.has_wheel_contact and impact.z - self.car.physics.location.z > 500 and car_velocity.length > 100 and self.car.boost > 20\
+        if self.aerial is None and self.car.has_wheel_contact and impact.z - self.car.physics.location.z > 500 and car_velocity.length > 100 and\
+           (self.car.boost > 20 or (abs(time - 0.6) < 0.1 and (impact - car_location).flatten().length < 1000))\
             and abs(self.steer_correction_radians) < 0.4 and impact_time < 5 and (impact_projection.y * team_sign > -5000 or abs(impact_projection.x) > 1000):
             # Start a new aerial
             self.aerial = Aerial(self.time)
@@ -114,20 +116,21 @@ class Anarchy(BaseAgent):
         # Set a destination for Anarchy to reach
         avoid_own_goal = impact_projection.y * team_sign < -5000
         wait = (ball_location.z > 200 and self.car.physics.location.z < 200)
+        take_serious_shot = (not kickoff and car_velocity.length > 600 and car_to_ball.y * team_sign > 0 and ball_velocity.flatten().length < 3000 and ball_location.y * team_sign > -2000)
         if wait:
             destination = Vector3(bounce_location.x, bounce_location.y, 0)
         else:
             destination = impact
             time = 0
         if kickoff:
-            pass
+            destination = ball_location + Vector3(0, -92.75 * team_sign, 0)
         elif avoid_own_goal:
             offset = (impact_time * 200 + 100)
             destination += Vector2(offset * -sign(impact_projection.x), 140 if wait else 0)
         elif abs(ball_location.x) < 750 or team_sign * car_location.y > team_sign * ball_location.y or (abs(ball_location.x) > 3200 and abs(ball_location.x) + 100 > abs(car_location.x)):
             destination.y -= max(abs(car_to_ball.y) / 2.9, 70 if wait else 100) * team_sign
         else:
-            destination += (destination - enemy_goal).normalized * max(car_to_ball.flatten().length / 3.3, 60 if wait else 100)
+            destination += (destination - enemy_goal).normalized * max(car_to_ball.flatten().length / (1.7 if take_serious_shot else 3.3), 60 if wait else 100)
         if abs(car_location.y > 5120): destination.x = min(700, max(-700, destination.x)) #Don't get stuck in goal
         car_to_destination = (destination - car_location)
 
@@ -135,11 +138,12 @@ class Anarchy(BaseAgent):
         self.renderer.begin_rendering()
         # commented out due to performance concerns
         # self.renderer.draw_polyline_3d([[car_location.x+triforce(-20,20), car_location.y+triforce(-20,20), triforce(shreck(200),200)] for i in range(40)], self.renderer.cyan())
-        self.renderer.draw_rect_2d(0, 0, 3840, 2160, True, self.renderer.create_color(64, 246, 74, 138))  # first bot that supports 4k resolution!
+        '''self.renderer.draw_rect_2d(0, 0, 3840, 2160, True, self.renderer.create_color(64, 246, 74, 138))  # first bot that supports 4k resolution!
         self.renderer.draw_string_2d(triforce(20, 50), triforce(10, 20), 5, 5, 'ALICE NAKIRI IS BEST GIRL', self.renderer.white())
-        self.renderer.draw_string_2d(triforce(20, 50), triforce(90, 100), 2, 2, '(zero two is a close second)', self.renderer.lime())
+        self.renderer.draw_string_2d(triforce(20, 50), triforce(90, 100), 2, 2, '(zero two is a close second)', self.renderer.lime())'''
         self.renderer.draw_string_2d(20, 100, 2, 2, "Max Speed: " + str(int(estimate_max_speed(self.car))), self.renderer.white())
         if kickoff: self.renderer.draw_string_2d(20, 140, 2, 2, "Kickoff", self.renderer.white())
+        if take_serious_shot: self.renderer.draw_string_2d(20, 140, 2, 2, "Shoot", self.renderer.white())
         self.renderer.draw_line_3d([destination.x, destination.y, impact.z], [impact.x, impact.y, impact.z], self.renderer.blue())
         if avoid_own_goal: self.renderer.draw_line_3d([car_location.x, car_location.y, 0], [impact_projection.x, impact_projection.y, 0], self.renderer.yellow())
         self.renderer.end_rendering()
@@ -150,46 +154,56 @@ class Anarchy(BaseAgent):
         wall_touch = (distance_from_wall(impact.flatten()) < 500 and team_sign * impact.y < 4000)
         local = rotation_matrix.dot(Vector3(car_to_destination.x, car_to_destination.y, (impact.z if wall_touch else 17.010000228881836) - self.car.physics.location.z))
         self.steer_correction_radians = math.atan2(local.y, local.x)
-        backwards = (math.cos(self.steer_correction_radians) < 0)
+        slow_down = abs(self.steer_correction_radians > 0.3 and inside_turning_radius(local, car_velocity.length) and take_serious_shot)
+        if slow_down:
+            self.renderer.begin_rendering()
+            self.renderer.draw_string_2d(triforce(20, 50), triforce(10, 20), 6, 6, 'Uh Oh', self.renderer.pink() if (self.time % 0.5) < 0.25 else self.renderer.red())
+            self.renderer.end_rendering()
+        turning_radians = self.steer_correction_radians
+        backwards = (math.cos(turning_radians) < 0)
         if backwards:
-            if self.steer_correction_radians != 0:
-                self.steer_correction_radians = -(self.steer_correction_radians - sign(self.steer_correction_radians) * math.pi)
-            else:
-                self.steer_correction_radians = math.pi
+            turning_radians = invert_angle(turning_radians)
 
         # Speed control
         target_velocity = (((bounce_location - car_location).length / time) if time > 0 else 2300)
         velocity_change = (target_velocity - car_velocity.flatten().length)
-        if velocity_change > 200 or target_velocity > 1410:
-            self.controller.boost = (abs(self.steer_correction_radians) < 0.2 and not self.car.is_super_sonic and not backwards)
-            self.controller.throttle = (1 if not backwards else -1)
-        elif velocity_change > -50:
+        if slow_down:
+            self.controller.boost = False
+            #self.controller.throttle = -clamp11(car_direction.correction_to(car_velocity.flatten()) * car_velocity.length)
+            self.controller.throttle = 0
+        if (velocity_change > 200 or target_velocity > 1410):
+            self.controller.boost = (abs(turning_radians) < 0.2 and not self.car.is_super_sonic and not backwards)
+            self.controller.throttle = (-1 if backwards else 1)
+        elif velocity_change > -150:
             self.controller.boost = False
             self.controller.throttle = 0
         else:
             self.controller.boost = False
-            self.controller.throttle = (-1 if not backwards else 1)
+            self.controller.throttle = (1 if backwards else -1)
 
         # Steering
-        turn = clamp11(self.steer_correction_radians * 3)
+        turn = clamp11(turning_radians * 3)
         self.controller.steer = turn
-        self.controller.handbrake = (abs(turn) > 1.2 and not self.car.is_super_sonic)
+        self.controller.handbrake = (abs(turn) > 1 and not self.car.is_super_sonic)
 
         # Dodging
         self.controller.jump = False
-        dodge_for_speed = (velocity_change > 500 and not backwards and self.car.boost < 12 and self.time > self.next_dodge_time + 1 and car_to_destination.size > 1200 and abs(self.steer_correction_radians) < 0.1)
-        if (((car_to_ball.flatten().size < 300 and ball_location.z < 300) or dodge_for_speed) and car_velocity.size > 1200) or self.dodging:
+        dodge_for_speed = (velocity_change > 500 and not backwards and self.car.boost < 14 and self.time > self.next_dodge_time + 0.85 and car_to_destination.size > (2200 if take_serious_shot else 1200) and abs(turning_radians) < 0.1)
+        if (((car_to_ball.flatten().size < 400 and ball_location.z < 300) or dodge_for_speed) and car_velocity.size > 1100) or self.dodging:
             dodge_at_ball = (impact_time < 0.4)
             dodge_angle = (car_direction.correction_to(car_to_ball) if dodge_at_ball else car_direction.correction_to(car_to_destination))
-            dodge(self, dodge_angle, rotation_velocity, 3 if dodge_at_ball else 1)
+            dodge(self, dodge_angle, rotation_velocity, 4 if dodge_at_ball else 1)
 
         # Half-flips
-        if backwards and (time if wait else impact_time) > 0.6 and car_velocity.size > 900 and abs(self.steer_correction_radians) < 0.1 or self.halfflipping:
+        if backwards and (time if wait else impact_time) > 0.6 and car_velocity.size > 900 and abs(turning_radians) < 0.1 or self.halfflipping:
             halfflip(self, rotation_velocity)
 
         # Recovery
         if not (self.dodging or self.halfflipping):
             if not self.car.has_wheel_contact:
+                #local = rotation_matrix.dot(car_to_ball)
+                #self.steer_correction_radians = math.atan2(local.y, local.x)
+        
                 self.controller.steer = 0
                 recover(self, rotation_velocity)
                 self.controller.boost = False
@@ -202,11 +216,11 @@ class Anarchy(BaseAgent):
 
 
 def recover(self, rotation_velocity: Vector3, roll = True, pitch = True, yaw = True):
+    wrap_yaw = (abs(self.steer_correction_radians) > math.pi * 0.75 and pitch and yaw)
     if roll: self.controller.roll = clamp11(self.car.physics.rotation.roll * -3 + rotation_velocity.x * 0.3)
     if abs(self.car.physics.rotation.roll) < 1.5 or not roll: 
-        if pitch: self.controller.pitch = clamp11(self.car.physics.rotation.pitch * -3 + rotation_velocity.y * 0.9)
-        if yaw: self.controller.yaw = clamp11(self.steer_correction_radians * 3 - rotation_velocity.z * 0.7)
-
+        if pitch: self.controller.pitch = clamp11((self.car.physics.rotation.pitch - math.pi if wrap_yaw else self.car.physics.rotation.pitch) * -4 + rotation_velocity.y * 0.8)
+        if yaw: self.controller.yaw = clamp11((invert_angle(self.steer_correction_radians) if wrap_yaw else self.steer_correction_radians) * 3.75 - rotation_velocity.z * 0.95)
 
 def dodge(self, angle: float, rotation_velocity: Vector3, multiply = 1):
     if self.car.has_wheel_contact and not self.dodging:
@@ -214,17 +228,17 @@ def dodge(self, angle: float, rotation_velocity: Vector3, multiply = 1):
         self.dodging = True
         self.controller.jump = True
         self.controller.pitch = -sign(math.cos(self.dodge_angle))
-        self.next_dodge_time = self.time + 0.1
+        self.next_dodge_time = self.time + 0.25
 
-    elif self.time > self.next_dodge_time:
-        self.controller.jump = True
-        if self.time < self.next_dodge_time + 1:
+    else:
+        if self.time > self.next_dodge_time:
+            self.controller.jump = True
+            if self.car.has_wheel_contact or self.time > self.next_dodge_time + 1.5: self.dodging = False
+        if self.time < self.next_dodge_time + 0.8:
             self.controller.roll = clamp11(math.sin(self.dodge_angle) * multiply)
             self.controller.pitch = clamp11(-math.cos(self.dodge_angle))
         else:
-            recover(self, rotation_velocity, yaw = (self.car.physics.location.z > 1000))
-        if self.car.has_wheel_contact or self.time > self.next_dodge_time + 1.5:
-            self.dodging = False
+            recover(self, rotation_velocity, yaw = (self.car.physics.location.z > 1000))        
         
 
 def halfflip(self, rotation_velocity: Vector3):
@@ -242,7 +256,7 @@ def halfflip(self, rotation_velocity: Vector3):
         if self.car.has_wheel_contact:
             self.halfflipping = False
     elif self.time > self.next_dodge_time + 0.3:
-        self.controller.jump = True
+        self.controller.jump = (self.time % 0.1) < 0.05 # Spam the jump button to ensure the flip
         self.controller.pitch = 1
 
 
@@ -297,21 +311,23 @@ def get_impact(path: BallPrediction, car, ball_position: Vector3, renderer = Non
     car_position = Vector3(car.physics.location.x, car.physics.location.y, car.physics.location.z)
     prev_slice = ball_position
 
+    bt = (bounce_time(car.physics.location.z - 17.010000228881836, -car.physics.velocity.z) if not car.has_wheel_contact else 0)
     u = Vector3(car.physics.velocity.x, car.physics.velocity.y, car.physics.velocity.z).length
     v = estimate_max_speed(car)
     for i in range(0, path.num_slices):
         current_slice: Vector3 = Vector3(path.slices[i].physics.location.x, path.slices[i].physics.location.y, path.slices[i].physics.location.z)
 
         s = ((current_slice - car_position).length - 92.75)
-        t = (float(i) / 60)
+        t = (float(i) / 60) - bt
         a = (991.667 if car.boost > 0 else 0) + (0 if u > 1410 else 800) #Bad estimation
         t_a = (0 if a == 0 else (v - u) / a)
         mx_s = ((t + (t - t_a)) / 2 * v + u * t) 
 
         if mx_s > s:
-            if renderer is not None: renderer.begin_rendering("Impact")
-            renderer.draw_line_3d([ball_position.x, ball_position.y, ball_position.z], [current_slice.x, current_slice.y, current_slice.z], renderer.red())
-            if renderer is not None: renderer.end_rendering()
+            if renderer is not None:
+                renderer.begin_rendering("Impact")
+                renderer.draw_line_3d([ball_position.x, ball_position.y, ball_position.z], [current_slice.x, current_slice.y, current_slice.z], renderer.red())
+                renderer.end_rendering()
             return current_slice, t
 
     return ball_position, 0 #Couldn't find a point of impact
@@ -334,3 +350,17 @@ def project_to_wall(point: Vector2, direction: Vector2) -> Vector2:
 
 def distance_from_wall(point: Vector2) -> float:
     return min(4096 - abs(point.x), 5120 - abs(point.y))
+
+
+def invert_angle(angle: float) -> float:
+    if angle != 0: return -(angle - sign(angle) * math.pi)
+    return math.pi
+
+
+def turning_radius(car_speed: float) -> float: # Thx Dom
+    return 156+0.1*car_speed+0.000069*car_speed**2+0.000000164*car_speed**3-5.62E-11*car_speed**4
+
+
+def inside_turning_radius(local: Vector3, car_speed: float) -> bool:
+    turn_radius = turning_radius(car_speed)
+    return turn_radius > min((local - Vector3(0, -turn_radius, 0)).length, (local - Vector3(0, turn_radius, 0)).length)
