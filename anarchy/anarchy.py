@@ -8,6 +8,8 @@ from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 from rlbot.utils.game_state_util import GameState, BallState, CarState, Physics, Vector3 as Vec3, Rotator, GameInfoState
 
+from utilities.actions import recover, dodge, halfflip
+from utilities.calculations import invert_angle
 from utilities.vectors import *
 from utilities.render_mesh import unzip_and_make_mesh, ColoredWireframe
 from utilities.quick_chat_handler import QuickChatHandler
@@ -215,51 +217,6 @@ class Anarchy(BaseAgent):
         return self.controller
 
 
-def recover(self, rotation_velocity: Vector3, roll = True, pitch = True, yaw = True):
-    wrap_yaw = (abs(self.steer_correction_radians) > math.pi * 0.75 and pitch and yaw)
-    if roll: self.controller.roll = clamp11(self.car.physics.rotation.roll * -3 + rotation_velocity.x * 0.3)
-    if abs(self.car.physics.rotation.roll) < 1.5 or not roll: 
-        if pitch: self.controller.pitch = clamp11((self.car.physics.rotation.pitch - math.pi if wrap_yaw else self.car.physics.rotation.pitch) * -4 + rotation_velocity.y * 0.8)
-        if yaw: self.controller.yaw = clamp11((invert_angle(self.steer_correction_radians) if wrap_yaw else self.steer_correction_radians) * 3.75 - rotation_velocity.z * 0.95)
-
-def dodge(self, angle: float, rotation_velocity: Vector3, multiply = 1):
-    if self.car.has_wheel_contact and not self.dodging:
-        self.dodge_angle = angle
-        self.dodging = True
-        self.controller.jump = True
-        self.controller.pitch = -sign(math.cos(self.dodge_angle))
-        self.next_dodge_time = self.time + 0.25
-
-    else:
-        if self.time > self.next_dodge_time:
-            self.controller.jump = True
-            if self.car.has_wheel_contact or self.time > self.next_dodge_time + 1.5: self.dodging = False
-        if self.time < self.next_dodge_time + 0.8:
-            self.controller.roll = clamp11(math.sin(self.dodge_angle) * multiply)
-            self.controller.pitch = clamp11(-math.cos(self.dodge_angle))
-        else:
-            recover(self, rotation_velocity, yaw = (self.car.physics.location.z > 1000))        
-        
-
-def halfflip(self, rotation_velocity: Vector3):
-    if not self.halfflipping and self.car.has_wheel_contact:
-        self.halfflipping = True
-        self.controller.jump = True
-        self.next_dodge_time = self.time
-    elif self.time > self.next_dodge_time + 1.0:
-        self.halfflipping = False
-    elif self.time > self.next_dodge_time + 0.6:
-        self.controller.pitch = -1
-        self.controller.roll = 1
-        if self.time > self.next_dodge_time + 0.9:
-            recover(self, rotation_velocity, yaw = (self.car.physics.location.z > 1000))
-        if self.car.has_wheel_contact:
-            self.halfflipping = False
-    elif self.time > self.next_dodge_time + 0.3:
-        self.controller.jump = (self.time % 0.1) < 0.05 # Spam the jump button to ensure the flip
-        self.controller.pitch = 1
-
-
 def get_car_facing_vector(car):
     pitch = float(car.physics.rotation.pitch)
     yaw = float(car.physics.rotation.yaw)
@@ -350,11 +307,6 @@ def project_to_wall(point: Vector2, direction: Vector2) -> Vector2:
 
 def distance_from_wall(point: Vector2) -> float:
     return min(4096 - abs(point.x), 5120 - abs(point.y))
-
-
-def invert_angle(angle: float) -> float:
-    if angle != 0: return -(angle - sign(angle) * math.pi)
-    return math.pi
 
 
 def turning_radius(car_speed: float) -> float: # Thx Dom

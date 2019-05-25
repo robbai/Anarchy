@@ -1,6 +1,8 @@
+import math
 from typing import Optional
 from rlbot.utils.structures.game_data_struct import BoostPad, BoostPadState, MAX_BOOSTS
 
+from utilities.utils import sign
 from utilities.vectors import Vector3
 
 BoostList = BoostPad * MAX_BOOSTS
@@ -24,3 +26,8 @@ def closest_boost(player_pos: Vector3, boost_pads: BoostList, boost_pad_states: 
                 closest = pad
 
     return closest
+
+
+def invert_angle(angle: float) -> float:
+    if angle != 0: return -(angle - sign(angle) * math.pi)
+    return math.pi
