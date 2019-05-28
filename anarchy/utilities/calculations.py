@@ -1,5 +1,5 @@
 import math
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 from rlbot.utils.structures.game_data_struct import BoostPad, BoostPadState, MAX_BOOSTS
@@ -72,3 +72,50 @@ def get_ball_bounces(path: BallPrediction) -> List[Slice]:
             bounces.append(current_slice)
 
     return bounces
+
+
+def estimate_max_speed(car, cap_at_sonic: bool = True):
+    velocity_vec = Vector2(car.physics.velocity.x, car.physics.velocity.y)
+    velocity = velocity_vec.length
+    boost = float(car.boost)
+
+    return min(2200.0 if cap_at_sonic else 2300.0, 1410.0 + boost / 33.3 * 991.667)
+
+
+def get_impact(path: BallPrediction, car, ball_position: Vector3, renderer = None) -> Tuple[Vector3, float]:
+    car_position = Vector3(car.physics.location.x, car.physics.location.y, car.physics.location.z)
+    prev_slice = ball_position
+
+    bt = (bounce_time(car.physics.location.z - 17.010000228881836, -car.physics.velocity.z) if not car.has_wheel_contact else 0)
+    u = Vector3(car.physics.velocity.x, car.physics.velocity.y, car.physics.velocity.z).length
+    v = estimate_max_speed(car)
+    for i in range(0, path.num_slices):
+        current_slice: Vector3 = Vector3(path.slices[i].physics.location.x, path.slices[i].physics.location.y, path.slices[i].physics.location.z)
+
+        s = ((current_slice - car_position).length - 92.75)
+        t = (float(i) / 60) - bt
+        a = (991.667 if car.boost > 0 else 0) + (0 if u > 1410 else 800) #Bad estimation
+        t_a = (0 if a == 0 else (v - u) / a)
+        mx_s = ((t + (t - t_a)) / 2 * v + u * t)
+
+        if mx_s > s:
+            if renderer is not None:
+                renderer.begin_rendering("Impact")
+                renderer.draw_line_3d([ball_position.x, ball_position.y, ball_position.z], [current_slice.x, current_slice.y, current_slice.z], renderer.red())
+                renderer.end_rendering()
+            return current_slice, t
+
+    return ball_position, 0 #Couldn't find a point of impact
+
+
+def distance_from_wall(point: Vector2) -> float:
+    return min(4096 - abs(point.x), 5120 - abs(point.y))
+
+
+def turning_radius(car_speed: float) -> float: # Thx Dom
+    return 156 + 0.1 * car_speed + 0.000069 * car_speed ** 2 + 0.000000164 * car_speed ** 3 - 5.62E-11 * car_speed ** 4
+
+
+def inside_turning_radius(local: Vector3, car_speed: float) -> bool:
+    turn_radius = turning_radius(car_speed)
+    return turn_radius > min((local - Vector3(0, -turn_radius, 0)).length, (local - Vector3(0, turn_radius, 0)).length)
