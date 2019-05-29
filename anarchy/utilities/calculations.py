@@ -119,3 +119,18 @@ def turning_radius(car_speed: float) -> float: # Thx Dom
 def inside_turning_radius(local: Vector3, car_speed: float) -> bool:
     turn_radius = turning_radius(car_speed)
     return turn_radius > min((local - Vector3(0, -turn_radius, 0)).length, (local - Vector3(0, turn_radius, 0)).length)
+
+
+def project_to_wall(point: Vector2, direction: Vector2) -> Vector2:
+    wall = Vector2(sign(direction.x) * 4096, sign(direction.y) * 5120)
+    dir_normal = direction.normalized
+
+    x_difference = (abs((wall.x - point.x) / dir_normal.x) if dir_normal.x != 0 else 10000)
+    y_difference = (abs((wall.y - point.y) / dir_normal.y) if dir_normal.y != 0 else 10000)
+
+    if x_difference < y_difference:
+        # Side wall is closer
+        return Vector2(wall.x, point.y + dir_normal.y * x_difference)
+    else:
+        # Back wall is closer
+        return Vector2(point.x + dir_normal.x * y_difference, wall.y)

@@ -8,7 +8,7 @@ from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 
 from utilities.actions import recover, dodge, halfflip
-from utilities.calculations import invert_angle, get_car_facing_vector, get_ball_bounces, estimate_max_speed, get_impact, distance_from_wall, inside_turning_radius
+from utilities.calculations import invert_angle, get_car_facing_vector, get_ball_bounces, get_impact, distance_from_wall, inside_turning_radius, project_to_wall
 from utilities.vectors import *
 from utilities.render_mesh import unzip_and_make_mesh, ColoredWireframe
 from utilities.quick_chat_handler import QuickChatHandler
@@ -214,20 +214,3 @@ class Anarchy(BaseAgent):
                 self.controller.yaw = 0
 
         return self.controller
-
-
-def project_to_wall(point: Vector2, direction: Vector2) -> Vector2:
-    wall = Vector2(sign(direction.x) * 4096, sign(direction.y) * 5120)
-    dir_normal = direction.normalized
-
-    x_difference = (abs((wall.x - point.x) / dir_normal.x) if dir_normal.x != 0 else 10000)
-    y_difference = (abs((wall.y - point.y) / dir_normal.y) if dir_normal.y != 0 else 10000)
-
-    if x_difference < y_difference:
-        # Side wall is closer
-        return Vector2(wall.x, point.y + dir_normal.y * x_difference)
-    else:
-        # Back wall is closer
-        return Vector2(point.x + dir_normal.x * y_difference, wall.y)
-
-
