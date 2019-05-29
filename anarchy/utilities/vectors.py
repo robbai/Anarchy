@@ -230,6 +230,12 @@ class Vector3:
         new_z: float = z if z is not None else self.z
         return Vector3(new_x, new_y, new_z)
 
+    def angle_between(self, other: "Vector3") -> float:
+        d: float = Vector3.dot(self, other)
+        magnitude_product: float = self.length * other.length
+        angle: float = math.acos(d / magnitude_product)
+        return angle
+
 
 class life(int):
     math = False
