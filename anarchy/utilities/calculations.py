@@ -13,7 +13,7 @@ BoostStateList = BoostPadState * MAX_BOOSTS
 
 def closest_boost(player_pos: Vector3, boost_pads: BoostList, boost_pad_states: BoostStateList) -> Optional[Vector3]:
     """
-    :param boost_pads: From self.agent.get_field_info().boost_pads
+    :param boost_pads: From self.get_field_info().boost_pads
     :param boost_pad_states: From packet.game_boosts
     """
     closest: Optional[Vector3] = None

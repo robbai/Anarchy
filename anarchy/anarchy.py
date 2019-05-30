@@ -8,7 +8,7 @@ from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 
 from utilities.actions import recover, dodge, halfflip
-from utilities.calculations import invert_angle, get_car_facing_vector, get_ball_bounces, get_impact, distance_from_wall, inside_turning_radius, project_to_wall, estimate_max_speed
+from utilities.calculations import invert_angle, get_car_facing_vector, get_ball_bounces, get_impact, distance_from_wall, inside_turning_radius, project_to_wall, estimate_max_speed, closest_boost
 from utilities.vectors import *
 from utilities.render_mesh import unzip_and_make_mesh, ColoredWireframe
 from utilities.quick_chat_handler import QuickChatHandler
@@ -115,9 +115,25 @@ class Anarchy(BaseAgent):
             return self.aerial.execute(packet, self.index, self.get_ball_prediction_struct())
 
         # Set a destination for Anarchy to reach
+        teammate_going_for_ball: bool = False
+        for index, car in enumerate(packet.game_cars[:8]):
+            if car.team == self.team and index != self.index:
+                teammate_to_ball: Vector3 = ball_location - Vector3(car.physics.location)
+                vector = get_car_facing_vector(car)
+                teammate_facing_direction: Vector3 = Vector3(vector.x, vector.y, 0)
+                teammate_velocity_direction: Vector3 = car_velocity.normalized
+                self_to_ball: Vector3 = ball_location - car_location
+                if teammate_to_ball.length < self_to_ball.length and \
+                        (teammate_to_ball.angle_between(teammate_facing_direction) < 0.35 or
+                         teammate_to_ball.angle_between(teammate_velocity_direction) < 0.35 or
+                         teammate_to_ball.length < 300):
+                    teammate_going_for_ball = True
+                    break
+
         avoid_own_goal = impact_projection.y * team_sign < -5000
         wait = (ball_location.z > 200 and self.car.physics.location.z < 200)
         take_serious_shot = (not kickoff and car_velocity.length > 600 and car_to_ball.y * team_sign > 0 and ball_velocity.flatten().length < 3000 and ball_location.y * team_sign > -2000)
+
         if wait:
             destination = Vector3(bounce_location.x, bounce_location.y, 0)
         else:
@@ -128,6 +144,8 @@ class Anarchy(BaseAgent):
         elif avoid_own_goal:
             offset = (impact_time * 200 + 100)
             destination += Vector2(offset * -sign(impact_projection.x), 140 if wait else 0)
+        elif teammate_going_for_ball:
+            destination = closest_boost(car_location, self.get_field_info().boost_pads, packet.game_boosts)
         elif abs(ball_location.x) < 750 or team_sign * car_location.y > team_sign * ball_location.y or (abs(ball_location.x) > 3200 and abs(ball_location.x) + 100 > abs(car_location.x)):
             destination.y -= max(abs(car_to_ball.y) / 2.9, 70 if wait else 100) * team_sign
         else:
