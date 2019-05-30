@@ -233,7 +233,9 @@ class Vector3:
     def angle_between(self, other: "Vector3") -> float:
         d: float = Vector3.dot(self, other)
         magnitude_product: float = self.length * other.length
-        angle: float = math.acos(d / magnitude_product)
+        div = d / magnitude_product
+        div = clamp(div, -1, 1)  # To prevent floating point issues where the value of div is something like 1.0000000000000002
+        angle: float = math.acos(div)
         return angle
 
 
