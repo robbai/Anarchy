@@ -8,7 +8,7 @@ from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 
 from utilities.actions import recover, dodge, halfflip
-from utilities.calculations import invert_angle, get_car_facing_vector, get_ball_bounces, get_impact, distance_from_wall, inside_turning_radius, project_to_wall
+from utilities.calculations import invert_angle, get_car_facing_vector, get_ball_bounces, get_impact, distance_from_wall, inside_turning_radius, project_to_wall, estimate_max_speed
 from utilities.vectors import *
 from utilities.render_mesh import unzip_and_make_mesh, ColoredWireframe
 from utilities.quick_chat_handler import QuickChatHandler
