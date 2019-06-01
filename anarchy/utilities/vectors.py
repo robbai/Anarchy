@@ -97,11 +97,13 @@ class Vector2:
         return self.x, self.y
 
     def normalize(self):
+        if self.size == 0: return Vector2(self.x, self.y)
         self /= self.size
 
     @property
     def normalized(self) -> "Vector2":
         # A shorthand to get a normalized (length 1) copy of this vector.
+        if self.size == 0: return Vector2(self.x, self.y)
         return self / self.size
 
 
@@ -217,11 +219,13 @@ class Vector3:
         return self.x * v.x + self.y * v.y + self.z * v.z
 
     def normalize(self):
+        if self.size == 0: return Vector3(self.x, self.y, self.z)
         self /= self.size
 
     @property
     def normalized(self) -> "Vector3":
         # A shorthand to get a normalized (length 1) copy of this vector.
+        if self.size == 0: return Vector3(self.x, self.y, self.z)
         return self / self.size
 
     def modified(self, x: float = None, y: float = None, z: float = None) -> "Vector3":
@@ -231,6 +235,7 @@ class Vector3:
         return Vector3(new_x, new_y, new_z)
 
     def angle_between(self, other: "Vector3") -> float:
+        if self.size == 0 or other.size == 0: return 0
         d: float = Vector3.dot(self, other)
         magnitude_product: float = self.length * other.length
         div = d / magnitude_product
