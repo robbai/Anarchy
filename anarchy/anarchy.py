@@ -118,7 +118,7 @@ class Anarchy(BaseAgent):
 
         # Set a destination for Anarchy to reach
         teammate_going_for_ball: bool = False
-        for index, car in enumerate(packet.game_cars[:8]):
+        for index, car in enumerate(packet.game_cars[:packet.num_cars]):
             if car.team == self.team and index != self.index:
                 teammate_to_ball: Vector3 = ball_location - Vector3(car.physics.location)
                 vector = get_car_facing_vector(car)

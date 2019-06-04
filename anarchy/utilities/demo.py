@@ -79,7 +79,7 @@ class Demolition:
         # Get the tastiest victim (aka slowest)
         victim_index: int = -1
         slowest_vel: float = 0
-        for index, car in enumerate(packet.game_cars[:8]):
+        for index, car in enumerate(packet.game_cars[:packet.num_cars]):
             if not Demolition.is_valid_victim(agent, car): continue
             velocity = Vector3(car.physics.velocity).length
             if victim_index == -1 or velocity < slowest_vel:
