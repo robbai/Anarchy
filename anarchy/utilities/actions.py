@@ -5,8 +5,8 @@ from utilities.utils import clamp11, sign
 from utilities.vectors import Vector3
 
 
-def recover(self, rotation_velocity: Vector3, roll = True, pitch = True, yaw = True):
-    wrap_yaw = (abs(self.steer_correction_radians) > math.pi * 0.75 and pitch and yaw)
+def recover(self, rotation_velocity: Vector3, roll = True, pitch = True, yaw = True, allow_yaw_wrap: bool = True):
+    wrap_yaw = (allow_yaw_wrap and abs(self.steer_correction_radians) > math.pi * 0.75 and pitch and yaw)
     if roll: self.controller.roll = clamp11(self.car.physics.rotation.roll * -3 + rotation_velocity.x * 0.3)
     if abs(self.car.physics.rotation.roll) < 1.5 or not roll:
         if pitch: self.controller.pitch = clamp11((self.car.physics.rotation.pitch - math.pi if wrap_yaw else self.car.physics.rotation.pitch) * -4 + rotation_velocity.y * 0.8)

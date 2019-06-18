@@ -14,7 +14,7 @@ from utilities.render_mesh import unzip_and_make_mesh, ColoredWireframe
 from utilities.quick_chat_handler import QuickChatHandler
 from utilities.matrix import Matrix3D
 from utilities.aerial import aerial_option_b as Aerial
-from utilities.demo import Demolition
+from utilities.demo import Demolition, max_time as max_demo_time
 
 # first!
 
@@ -118,17 +118,18 @@ class Anarchy(BaseAgent):
 
         # Set a destination for Anarchy to reach
         teammate_going_for_ball: bool = False
+        min_teammate_distance = 10 ** 10
         for index, car in enumerate(packet.game_cars[:packet.num_cars]):
             if car.team == self.team and index != self.index:
                 teammate_to_ball: Vector3 = ball_location - Vector3(car.physics.location)
                 vector = get_car_facing_vector(car)
                 teammate_facing_direction: Vector3 = Vector3(vector.x, vector.y, 0)
                 teammate_velocity_direction: Vector3 = Vector3(car.physics.velocity)
-                self_to_ball: Vector3 = ball_location - car_location
-                if teammate_to_ball.length < self_to_ball.length and teammate_to_ball.y * team_sign > 0 and \
-                        (teammate_to_ball.angle_between(teammate_facing_direction) < 0.45 or
-                         teammate_to_ball.angle_between(teammate_velocity_direction) < 0.45 or
-                         teammate_to_ball.length < 800):
+                min_teammate_distance = min(min_teammate_distance, teammate_to_ball.length)
+                if teammate_to_ball.length < car_to_ball.length and teammate_to_ball.y * team_sign > 0 and \
+                        (abs(teammate_to_ball.angle_between(teammate_facing_direction)) < 0.45 * math.pi or
+                         abs(teammate_to_ball.angle_between(teammate_velocity_direction)) < 0.45 * math.pi or
+                         teammate_to_ball.length < 1200):
                     teammate_going_for_ball = True
                     self.renderer.begin_rendering('teammate')
                     self.renderer.draw_line_3d(car_location, car.physics.location, self.renderer.black())
@@ -141,37 +142,48 @@ class Anarchy(BaseAgent):
         take_serious_shot = (not kickoff and car_velocity.length > 600 and car_to_ball.y * team_sign > 0 and ball_velocity.flatten().length < 3000 and ball_location.y * team_sign > -2000)
         obey_turning_radius = take_serious_shot # Slow down if the target is in the turning radius
         demoing = (self.demo is not None)
+        need_boost = (not self.car.is_super_sonic and self.car.boost < 30)
+        close_boost = closest_boost(car_location, self.get_field_info().boost_pads, packet.game_boosts)
+        park_car = False
+        not_our_kickoff = (kickoff and min_teammate_distance < car_to_ball.length - 100)
         
         if wait and bounce_location is not None:
             destination = Vector3(bounce_location.x, bounce_location.y, 0)
         else:
             destination = impact
             time = 0
-        if kickoff:
+        if kickoff and not not_our_kickoff:
             destination = ball_location + Vector3(0, -92.75 * team_sign, 0)
-        elif avoid_own_goal and not demoing:
-            offset = (impact_time * 200 + 100)
+        elif avoid_own_goal and not not_our_kickoff and not demoing and (not teammate_going_for_ball or impact.y * team_sign > -4000):
+            offset = (impact_time * 200 + 90)
             destination += Vector2(offset * -sign(impact_projection.x), 140 if wait else 0)
-        elif teammate_going_for_ball or self.demo is not None:
-            destination = closest_boost(car_location, self.get_field_info().boost_pads, packet.game_boosts)
+            obey_turning_radius = True
+        elif not_our_kickoff or teammate_going_for_ball or self.demo is not None or \
+             (need_boost and (close_boost - car_location.flatten()).length * 5 < car_to_ball.length):
+            destination = close_boost
             obey_turning_radius = True
 
             demo_location = None
-            if self.car.is_super_sonic or (self.car.boost > 30 and car_velocity.length > 1300):
+            if not need_boost and not not_our_kickoff:
                 if self.demo is None: self.demo = Demolition.start_demo(self, packet)
-                demo_location = (self.demo.get_destination(packet) if self.demo is not None else None)
-                if demo_location is not None:
+                demo_location, demo_time = (self.demo.get_destination(packet) if self.demo is not None else None)
+                if demo_location is not None and (demoing or demo_time < max_demo_time):
                     destination = demo_location
                     obey_turning_radius = False
                     demoing = True
                     time = 0
-            if demo_location is None:
+            if not demoing or self.demo is None or demo_location is None:
                 self.demo = None
                 demoing = False
+                if (not need_boost and car_to_ball.length > 3000) if not not_our_kickoff else (abs(car_location.x) < 50): #Middle
+                    park_car = True
+                    destination = Vector2(0, -4900 * team_sign)
+                    destination += (impact.flatten() - destination) / 8
+                    destination = Vector3(destination.x, destination.y, 17)
         elif abs(ball_location.x) < 750 or team_sign * car_location.y > team_sign * ball_location.y or (abs(ball_location.x) > 3200 and abs(ball_location.x) + 100 > abs(car_location.x)):
-            destination.y -= max(abs(car_to_ball.y) / 2.9, 70 if wait else 100) * team_sign
+            destination.y -= max(abs(car_to_ball.y) / 3, 70 if wait else 100) * team_sign
         else:
-            destination += (destination - enemy_goal).normalized * max(car_to_ball.flatten().length / (1.7 if take_serious_shot else 3.3), 60 if wait else 100)
+            destination += (destination - enemy_goal).normalized * max(car_to_ball.flatten().length / (1.65 if take_serious_shot else 3.4), 60 if wait else 100)
         if abs(car_location.y > 5120): destination.x = min(700, max(-700, destination.x)) #Don't get stuck in goal
         car_to_destination = (destination - car_location)
 
@@ -187,6 +199,7 @@ class Anarchy(BaseAgent):
         self.renderer.draw_line_3d([destination.x, destination.y, impact.z], [impact.x, impact.y, impact.z], self.renderer.blue())
         if avoid_own_goal: self.renderer.draw_line_3d([car_location.x, car_location.y, 0], [impact_projection.x, impact_projection.y, 0], self.renderer.yellow())
         if not demoing: self.renderer.clear_screen(Demolition.get_render_name(self))
+        if park_car: self.renderer.draw_string_2d(20, 140, 2, 2, "Parking!", self.renderer.yellow())
         self.renderer.end_rendering()
 
         if self.render_statue: self.zero_two.render(self.renderer)
@@ -195,7 +208,7 @@ class Anarchy(BaseAgent):
         wall_touch = (distance_from_wall(impact.flatten()) < 500 and team_sign * impact.y < 4000)
         local = rotation_matrix.dot(Vector3(car_to_destination.x, car_to_destination.y, (impact.z if wall_touch else 17.010000228881836) - self.car.physics.location.z))
         self.steer_correction_radians = math.atan2(local.y, local.x)
-        slow_down = abs(self.steer_correction_radians > 0.3 and inside_turning_radius(local, car_velocity.length) and obey_turning_radius)
+        slow_down = park_car or abs(self.steer_correction_radians > 0.3 and inside_turning_radius(local, car_velocity.length) and obey_turning_radius)
         if slow_down:
             self.renderer.begin_rendering()
             self.renderer.draw_string_2d(triforce(20, 50), triforce(10, 20), 6, 6, 'Uh Oh', self.renderer.pink() if (self.time % 0.5) < 0.25 else self.renderer.red())
@@ -204,25 +217,29 @@ class Anarchy(BaseAgent):
         backwards = (math.cos(turning_radians) < 0 and not demoing)
         if backwards:
             turning_radians = invert_angle(turning_radians)
+        throttle_sign = (-1 if backwards else 1)
 
         # Speed control
         target_velocity = (((bounce_location - car_location).length / time) if time > 0 else 2300)
         velocity_change = (target_velocity - car_velocity.flatten().length)
-        if slow_down:
+        if park_car:
+            self.controller.boost = False
+            self.controller.throttle = clamp11((destination - car_location).length / 2000) * throttle_sign
+        elif slow_down:
             self.controller.boost = False
             if car_velocity.length > 600:
-                self.controller.throttle = -clamp11(car_direction.correction_to(car_velocity.flatten()) * car_velocity.length)
+                self.controller.throttle = -sign(math.cos(car_direction.correction_to(car_velocity.flatten())) * car_velocity.length)
             else:
                 self.controller.throttle = 0
-        if (velocity_change > 200 or target_velocity > 1410 or demoing):
+        elif (velocity_change > 200 or target_velocity > 1410 or demoing):
             self.controller.boost = (abs(turning_radians) < 0.2 and not self.car.is_super_sonic and not backwards)
-            self.controller.throttle = (-1 if backwards else 1)
+            self.controller.throttle = throttle_sign
         elif velocity_change > -150:
             self.controller.boost = False
             self.controller.throttle = 0
         else:
             self.controller.boost = False
-            self.controller.throttle = (1 if backwards else -1)
+            self.controller.throttle = -throttle_sign
 
         # Steering
         turn = clamp11(turning_radians * 3)
@@ -238,7 +255,7 @@ class Anarchy(BaseAgent):
             dodge(self, dodge_angle, rotation_velocity, 4 if dodge_at_ball else 1)
 
         # Half-flips
-        if backwards and (time if wait else impact_time) > 0.6 and car_velocity.size > 900 and abs(turning_radians) < 0.1 or self.halfflipping:
+        if backwards and not park_car and (time if wait else impact_time) > 0.6 and car_velocity.size > 900 and abs(turning_radians) < 0.1 or self.halfflipping:
             halfflip(self, rotation_velocity)
 
         # Recovery
@@ -248,7 +265,7 @@ class Anarchy(BaseAgent):
                 #self.steer_correction_radians = math.atan2(local.y, local.x)
         
                 self.controller.steer = 0
-                recover(self, rotation_velocity)
+                recover(self, rotation_velocity, allow_yaw_wrap = car_location.z > 250)
                 self.controller.boost = False
             else:
                 self.controller.roll = 0

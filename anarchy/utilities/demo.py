@@ -9,7 +9,7 @@ from rlbot.agents.base_agent import BaseAgent
 from utilities.vectors import *
 
 
-max_time = 2.5
+max_time = 2.75
 dt = 1 / 60
 render_dt = 1 / 10
 
@@ -33,7 +33,7 @@ class Demolition:
     def get_destination(self, packet: GameTickPacket):
         my_car_location = Vector3(packet.game_cars[self.agent.index].physics.location)
         victim = packet.game_cars[self.victim_index]
-        if not Demolition.is_valid_victim(self.agent, victim): return None
+        if not Demolition.is_valid_victim(self.agent, victim): return None, 0
         time_now = packet.game_info.seconds_elapsed
         
         self.positions.append(Slice(time = time_now, position = Vector3(victim.physics.location)))
@@ -43,14 +43,15 @@ class Demolition:
         data_x, data_y, data_z, data_t = self.get_data()
         popt_x, popt_y, popt_z = (curve_fit(displacement, data_t, data_x)[0], curve_fit(displacement, data_t, data_y)[0], curve_fit(displacement, data_t, data_z)[0])
 
+        destination = None
         victim_locations = []
         t = time_now + dt
         while t < time_now + max_time:
             victim_locations.append(Vector3(displacement_curve(t, popt_x), displacement_curve(t, popt_y), displacement_curve(t, popt_z)))
-            if ((victim_locations[len(victim_locations) - 1] - my_car_location).length - 50) / (t - time_now) < 2200: break
+            if ((victim_locations[len(victim_locations) - 1] - my_car_location).length - 50) / (t - time_now) < 2200:
+                destination = victim_locations[len(victim_locations) - 1]
+                break
             t += dt
-
-        destination = victim_locations[len(victim_locations) - 1]
 
         # Render
         if destination is not None:
@@ -58,8 +59,8 @@ class Demolition:
             if len(victim_locations) > 1: self.agent.renderer.draw_polyline_3d([victim_locations[i] for i in np.linspace(0, len(victim_locations) - 1, len(victim_locations) / int(render_dt / dt)).astype(int)], self.agent.renderer.orange())
             self.agent.renderer.draw_string_3d(destination, 1, 1, str(round(t - time_now, 2)) + "s", self.agent.renderer.yellow())
             self.agent.renderer.end_rendering()
-            
-        return destination
+            return destination, t - time_now
+        return None, 0
 
     @staticmethod
     def get_render_name(agent: BaseAgent):
