@@ -146,7 +146,7 @@ class Anarchy(BaseAgent):
         obey_turning_radius = True # Slow down if the target is in the turning radius
         demoing = (self.demo is not None)
         need_boost = (not self.car.is_super_sonic and self.car.boost < 30)
-        close_boost = closest_boost(Vector3(-impact.x, impact.y, 0) if teammate_going_for_ball and impact_time < 2.5 else car_location\
+        close_boost = closest_boost(Vector3(-impact.x, impact.y, 0) if teammate_going_for_ball and impact_time < 2.5 and not kickoff else car_location\
                                     , self.get_field_info().boost_pads, packet.game_boosts)
         park_car = False
         not_our_kickoff = (kickoff and min_teammate_distance < car_to_ball.length - 100)
