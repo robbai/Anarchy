@@ -9,9 +9,10 @@ from rlbot.agents.base_agent import BaseAgent
 from utilities.vectors import *
 
 
-max_time = 2.75
-dt = 1 / 60
-render_dt = 1 / 10
+max_time = 3.5
+dt = 1 / 30
+render_dt = 1 / 5
+polynomial_degree = 3
 
 
 @dataclass
@@ -37,7 +38,7 @@ class Demolition:
         time_now = packet.game_info.seconds_elapsed
         
         self.positions.append(Slice(time = time_now, position = Vector3(victim.physics.location)))
-        self.limit_data_time(0.4)
+        self.limit_data_time(max(dt * (polynomial_degree + 1), 0.35))
 
         # Fit the curves
         data_x, data_y, data_z, data_t = self.get_data()

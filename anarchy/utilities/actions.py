@@ -25,9 +25,12 @@ def dodge(self, angle: float, rotation_velocity: Vector3, multiply = 1):
         if self.time > self.next_dodge_time:
             self.controller.jump = True
             if self.car.has_wheel_contact or self.time > self.next_dodge_time + 1.5: self.dodging = False
-        if self.time < self.next_dodge_time + 0.8:
+        if self.time < self.next_dodge_time + 0.5:
             self.controller.roll = clamp11(math.sin(self.dodge_angle) * multiply)
             self.controller.pitch = clamp11(-math.cos(self.dodge_angle))
+        elif self.time < self.next_dodge_time + 1:
+            self.controller.roll = 0
+            self.controller.pitch = 0
         else:
             recover(self, rotation_velocity, yaw = (self.car.physics.location.z > 1000))
 
