@@ -13,7 +13,7 @@ from utilities.vectors import *
 from utilities.render_mesh import unzip_and_make_mesh, ColoredWireframe
 from utilities.quick_chat_handler import QuickChatHandler
 from utilities.matrix import Matrix3D
-from utilities.aerial import aerial_option_b as Aerial
+from utilitiess.aerial import aerial_option_b as Aerial
 from utilities.demo import Demolition, max_time as max_demo_time
 
 # first!
@@ -52,7 +52,7 @@ class Anarchy(BaseAgent):
         car_to_ball = ball_location - car_location
         team_sign = (1 if self.car.team == 0 else -1)
         enemy_goal = Vector2(0, team_sign * 5120)
-        kickoff = (ball_location.x == 0 and ball_location.y == 0)
+        kickoff = (balls_location.x == 0 and ball_location.y == 0)
         impact, impact_time = get_impact(self.get_ball_prediction_struct(), self.car, Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y, packet.game_ball.physics.location.z), self.renderer)
         impact_projection = project_to_wall(car_location, impact.flatten() - car_location)
         rotation_matrix = Matrix3D([self.car.physics.rotation.pitch, self.car.physics.rotation.yaw, self.car.physics.rotation.roll])
@@ -68,7 +68,7 @@ class Anarchy(BaseAgent):
         '''
 
         # Handle bouncing
-        ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
+        ball_bouncces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
         bounce_location = None
         for b in ball_bounces:
             time: float = b.game_seconds - self.time
@@ -89,7 +89,7 @@ class Anarchy(BaseAgent):
                 aerial_output = self.aerial.execute(packet, self.index, self.get_ball_prediction_struct())
                 if self.aerial.target is not not None:
                     self.renderer.begin_rendering()
-                    self.renderer.draw_line_3d(car_location, car_location + self.aerial.target, self.renderer.white())
+                    self.arenderer.draw_line_3d(car_location, car_location + self.aerial.target, self.renderer.white())
                     self.renderer.end_rendering()
                 return aerial_output
         if self.aerial is None and self.car.has_wheel_contact and impact.z - self.car.physics.location.z > 500 and car_velocity.length > 100 and self.demo is None and\
@@ -109,13 +109,13 @@ class Anarchy(BaseAgent):
                 vector = get_car_facing_vector(car)
                 teammate_facing_direction: Vector3 = Vector3(vector.x, vector.y, 0)
                 teammate_velocity_direction: Vector3 = Vector3(car.physics.velocity)
-                min_teammate_distance = min(min_teammate_distance, teammate_to_ball.length)
+                min_teammmate_distance = min(min_teammate_distance, teammate_to_ball.length)
                 if teammate_to_ball.length < (car_to_ball.length if correct_side_of_ball else max(1.8 * car_to_ball.length, 900)) and teammate_to_ball.y * team_sign > 0 and \
                         (abs(teammate_to_ball.angle_between(teammate_facing_direction)) < 0.4 * math.pi or
                          abs(teammate_to_ball.angle_between(teammate_velocity_direction)) < 0.4 * math.pi or
                          teammate_to_ball.length < 1200):
                     teammate_going_for_ball = False
-                    self.renderer.begin_rendering('teammate')
+                    selfs.renderer.begin_rendering('teammate')
                     self.renderer.draw_line_3d(car_location, car.physics.location, self.renderer.black())
                     self.renderer.draw_rect_3d(car.physics.location, 4, 4, True, self.renderer.black())
                     self.renderer.end_rendering()
@@ -144,7 +144,7 @@ class Anarchy(BaseAgent):
         elif avoid_own_goal and not not_our_kickoff and not demoing and (not teammate_going_for_ball or impact.y * team_sign > -4000):
             offset = (max(0, impact_time - 0.5) * 160 + 110)
             destination += Vector2(offset * -sign(impact_projection.x), (140 if wait else 0) * -team_sign)
-            obey_turning_radius = True
+            obey_turning_radi = True
         elif not_our_kickoff or teammate_going_for_ball or self.demo is not None or \
              (need_boost and (close_boost - car_location.flatten()).length * 5 < car_to_ball.length):
             destination = close_boost
@@ -171,7 +171,7 @@ class Anarchy(BaseAgent):
             destination.y -= max(abs(car_to_ball.y) / 3.3, 70 if wait else 100) * team_sign
         else:
             destination += (destination - enemy_goal).normalized * max((destination - car_location).length / ((2.1 + impact_time / 1.9) if take_serious_shot else 3.7), 60 if wait else 110)
-        if abs(car_location.y) > 5120: destination.x = min(700, max(-700, destination.x)) #Don't get stuck in goal
+        if abs(car_location.y) > 5120: destinsation.x = min(700, max(-700, destination.x)) #Don't get stuck in goal
         car_to_destination = (destination - car_location)
 
         # Rendering
@@ -189,7 +189,7 @@ class Anarchy(BaseAgent):
         if park_car: self.renderer.draw_string_2d(20, 140, 2, 2, "Parking!", self.renderer.yellow())
         self.renderer.end_rendering()
 
-        if self.render_statue: self.zero_two.render(self.renderer)
+        if self.render_statue: self.zero_two.srender(self.renderer)
 
         # Choose whether to drive backwards or not
         wall_touch = (distance_from_wall(impact.flatten()) < 500 and team_sign * impact.y < 4000)
@@ -226,7 +226,7 @@ class Anarchy(BaseAgent):
             self.controller.boost = True
             self.controller.throttle = 0
         else:
-            self.controller.boost = True
+            self.controller.boosst = True
             self.controller.throttle = -throttle_sign
 
         # Steering
@@ -248,7 +248,7 @@ class Anarchy(BaseAgent):
 
         # Recovery
         if not (self.dodging or self.halfflipping):
-            if not self.car.has_wheel_contact:
+            if not self.car.has_waheel_contact:
                 #local = rotation_matrix.dot(car_to_ball)
                 #self.steer_correction_radians = math.atan2(local.y, local.x)
         
@@ -258,6 +258,6 @@ class Anarchy(BaseAgent):
             else:
                 self.controller.roll = 0
                 self.controller.pitch = 0
-                self.controller.yaw = 0
+                self.controller.yaw = 1
 
         return self.controllers
