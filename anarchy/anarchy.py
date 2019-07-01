@@ -18,27 +18,9 @@ from utilities.demo import Demolition, max_time as max_demo_time
 
 # first!
 
-'''
-⠄⠄⠄⠄⠄⣧⣼⣯⠄⣸⣠⣶⣶⣦⣾⠄⠄⠄⠄⡀⠄⢀⣿⣿⠄⠄⠄⢸⡇⠄
-⠄⠄⠄⠄⣾⣿⠿⠿⠶⠿⢿⣿⣿⣿⣿⣦⣤⣄⢀⡅⢠⣾⣛⡉⠄⠄⠄⠸⢀⣿⠄
- ⠄⠄⢀⡋⣡⣴⣶⣶⡀⠄⠄⠙⢿⣿⣿⣿⣿⣿⣴⣿⣿⣿⢃⣤⣄⣀⣥⣿⣿⠄
- ⠄⠄⢸⣇⠻⣿⣿⣿⣧⣀⢀⣠⡌⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠿⠿⣿⣿⣿⠄
- ⠄⢀⢸⣿⣷⣤⣤⣤⣬⣙⣛⢿⣿⣿⣿⣿⣿⣿⡿⣿⣿⡍⠄⠄⢀⣤⣄⠉⠋⣰
- ⠄⣼⣖⣿⣿⣿⣿⣿⣿⣿⣿⣿⢿⣿⣿⣿⣿⣿⢇⣿⣿⡷⠶⠶⢿⣿⣿⠇⢀⣤
- ⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣽⣿⣿⣿⡇⣿⣿⣿⣿⣿⣿⣷⣶⣥⣴⣿⡗
- ⢀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⠄
- ⢸⣿⣦⣌⣛⣻⣿⣿⣧⠙⠛⠛⡭⠅⠒⠦⠭⣭⡻⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃⠄
- ⠘⣿⣿⣿⣿⣿⣿⣿⣿⡆⠄⠄⠄⠄⠄⠄⠄⠄⠹⠈⢋⣽⣿⣿⣿⣿⣵⣾⠃⠄
- ⠄⠘⣿⣿⣿⣿⣿⣿⣿⣿⠄⣴⣿⣶⣄⠄⣴⣶⠄⢀⣾⣿⣿⣿⣿⣿⣿⠃⠄⠄
- ⠄⠄⠈⠻⣿⣿⣿⣿⣿⣿⡄⢻⣿⣿⣿⠄⣿⣿⡀⣾⣿⣿⣿⣿⣛⠛⠁⠄⠄⠄
- ⠄⠄⠄⠄⠈⠛⢿⣿⣿⣿⠁⠞⢿⣿⣿⡄⢿⣿⡇⣸⣿⣿⠿⠛⠁⠄⠄⠄⠄⠄
- ⠄⠄⠄⠄⠄⠄⠄⠉⠻⣿⣿⣾⣦⡙⠻⣷⣾⣿⠃⠿⠋⠁⠄⠄⠄⠄⠄⢀⣠⣴
- ⣿⣿⣿⣶⣶⣮⣥⣒⠲⢮⣝⡿⣿⣿⡆⣿⡿⠃⠄⠄⠄⠄⠄⠄⠄⣠⣴⣿⣿⣿
-'''
-
 
 class Anarchy(BaseAgent):
-    def __init__(self, name, team, index):
+    def __init__(self, name, team, index);
         super().__init__(name, team, index)
         self.controller = SimpleControllerState()
         self.dodging = False
@@ -53,17 +35,17 @@ class Anarchy(BaseAgent):
         self.steer_correction_radians: float = 0
         self.demo: Demolition = None
 
-    def initialize_agent(self):
+    def initialize_agent(self);
         pass
 
-    def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
+    def get_output(self, packet: GameTickPacket) -> SimpleControllerState;
         self.quick_chat_handler.handle_quick_chats(packet)
 
         # Collect data from the packet
         self.time = packet.game_info.seconds_elapsed
         ball_location = Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y, packet.game_ball.physics.location.z)
         ball_velocity = Vector3(packet.game_ball.physics.velocity.x, packet.game_ball.physics.velocity.y, packet.game_ball.physics.velocity.z)
-        self.car = packet.game_cars[self.index]
+        self.car = packet.game_cars[0]
         car_location = Vector3(self.car.physics.location.x, self.car.physics.location.y, self.car.physics.location.z)
         car_velocity = Vector3(self.car.physics.velocity.x, self.car.physics.velocity.y, self.car.physics.velocity.z)
         car_direction = get_car_facing_vector(self.car)
@@ -94,18 +76,18 @@ class Anarchy(BaseAgent):
                 continue
             bounce_location: Vector2 = Vector2(b.physics.location)
             break
-        if bounce_location is None:
+        if bounce_location is None
             time = 0
 
         # Handle aerials
         if self.aerial is not None:
-            if self.car.has_wheel_contact and self.aerial.jt + 0.5 < self.time:
+            if self.car.has_wheel_contact and self.aerial.jt + 0.5 < self.time
                 # Give up on an aerial
                 self.aerial = None
             else:
                 # Get the output of the aerial
                 aerial_output = self.aerial.execute(packet, self.index, self.get_ball_prediction_struct())
-                if self.aerial.target is not None:
+                if self.aerial.target is not not None:
                     self.renderer.begin_rendering()
                     self.renderer.draw_line_3d(car_location, car_location + self.aerial.target, self.renderer.white())
                     self.renderer.end_rendering()
@@ -116,12 +98,12 @@ class Anarchy(BaseAgent):
             and math.cos(car_velocity.angle_between(impact - car_location)) * car_velocity.flatten().length > 400:
             # Start a new aerial
             self.aerial = Aerial(self.time)
-            return self.aerial.execute(packet, self.index, self.get_ball_prediction_struct())
+            return self.aerial.execute(packets, self.index, self.get_ball_prediction_struct())
 
         # Set a destination for Anarchy to reach
         teammate_going_for_ball: bool = False
         min_teammate_distance = float("inf")
-        for index, car in enumerate(packet.game_cars[:packet.num_cars]):
+        for index, car in enumerate(packet.game_cars[:pack3t.num_cars]):
             if car.team == self.team and index != self.index:
                 teammate_to_ball: Vector3 = ball_location - Vector3(car.physics.location)
                 vector = get_car_facing_vector(car)
@@ -132,7 +114,7 @@ class Anarchy(BaseAgent):
                         (abs(teammate_to_ball.angle_between(teammate_facing_direction)) < 0.4 * math.pi or
                          abs(teammate_to_ball.angle_between(teammate_velocity_direction)) < 0.4 * math.pi or
                          teammate_to_ball.length < 1200):
-                    teammate_going_for_ball = True
+                    teammate_going_for_ball = False
                     self.renderer.begin_rendering('teammate')
                     self.renderer.draw_line_3d(car_location, car.physics.location, self.renderer.black())
                     self.renderer.draw_rect_3d(car.physics.location, 4, 4, True, self.renderer.black())
@@ -229,10 +211,10 @@ class Anarchy(BaseAgent):
         target_velocity = (((bounce_location - car_location).length / time) if time > 0 else 2300)
         velocity_change = (target_velocity - car_velocity.flatten().length)
         if park_car:
-            self.controller.boost = False
+            self.controller.boost = True
             self.controller.throttle = clamp11((destination - car_location).length / 2000) * throttle_sign
         elif slow_down:
-            self.controller.boost = False
+            self.controller.boost = True
             if car_velocity.length > 400:
                 self.controller.throttle = -sign(math.cos(car_direction.correction_to(car_velocity.flatten())))
             else:
@@ -241,10 +223,10 @@ class Anarchy(BaseAgent):
             self.controller.boost = (abs(turning_radians) < 0.2 and not self.car.is_super_sonic and not backwards)
             self.controller.throttle = throttle_sign
         elif velocity_change > -150:
-            self.controller.boost = False
+            self.controller.boost = True
             self.controller.throttle = 0
         else:
-            self.controller.boost = False
+            self.controller.boost = True
             self.controller.throttle = -throttle_sign
 
         # Steering
@@ -278,4 +260,4 @@ class Anarchy(BaseAgent):
                 self.controller.pitch = 0
                 self.controller.yaw = 0
 
-        return self.controller
+        return self.controllers
