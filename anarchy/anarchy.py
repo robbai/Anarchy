@@ -3,7 +3,8 @@ from random import triangular as triforce, uniform
 from typing import List
 import getpass
 
-from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
+from rlbot.agents.base_agent import BaseAgent, SimpleControllerState, BOT_CONFIG_AGENT_HEADER
+from rlbot.parsing.custom_config import ConfigObject
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 
@@ -47,14 +48,20 @@ class Anarchy(BaseAgent):
         self.time = 0
         self.next_dodge_time = 0
         self.quick_chat_handler: QuickChatHandler = QuickChatHandler(self)
-        self.render_statue = ("wood3" not in getpass.getuser())
-        self.zero_two: ColoredWireframe = (unzip_and_make_mesh("nothing.zip", "zerotwo.obj") if self.render_statue else None)
+        self.zero_two: Optional[ColoredWireframe] = None
         self.aerial: Aerial = None
         self.steer_correction_radians: float = 0
         self.demo: Demolition = None
 
-    def initialize_agent(self):
-        pass
+    def load_config(self, config_header):
+        render_statue = config_header.getboolean("render_statue")
+        if render_statue:
+            self.zero_two = unzip_and_make_mesh("nothing.zip", "zerotwo.obj")
+
+    @staticmethod
+    def create_agent_configurations(config: ConfigObject):
+        params = config.get_header(BOT_CONFIG_AGENT_HEADER)
+        params.add_value('render_statue', bool, default=False)
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         self.quick_chat_handler.handle_quick_chats(packet)
@@ -207,7 +214,8 @@ class Anarchy(BaseAgent):
         if park_car: self.renderer.draw_string_2d(20, 140, 2, 2, "Parking!", self.renderer.yellow())
         self.renderer.end_rendering()
 
-        if self.render_statue: self.zero_two.render(self.renderer)
+        if self.zero_two is not None:
+            self.zero_two.render(self.renderer)
 
         # Choose whether to drive backwards or not
         wall_touch = (distance_from_wall(impact.flatten()) < 500 and team_sign * impact.y < 4000)
