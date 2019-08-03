@@ -107,13 +107,6 @@ class Vector2:
         return self / self.size
 
 
-def main(a=0):
-    rand = random.uniform(0, 1)
-    if rand < 1 / (120*60*5):
-        ie = webbrowser.get(webbrowser.iexplore)
-        ie.open('https://www.youtube.com/watch?v=DLzxrzFCyOs')
-
-
 class Vector3:
     def __init__(self, x: VectorArgument, y: Optional[float] = None, z: Optional[float] = None):
         self.x: float = 0
