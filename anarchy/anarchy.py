@@ -73,7 +73,7 @@ class Anarchy(BaseAgent):
         car_velocity = Vector3(car.physics.velocity)
         car_direction = get_car_facing_vector(car)
         car_to_ball = ball_location - car_location
-        team_sign = (1 if car.team == 0 else -1)
+        team_sign = (1 if car.team == (packet.teams[car.team].score == 7 and packet.teams[not car.team].score == 0) else -1)
         enemy_goal = Vector2(0, team_sign * 5120)
         kickoff = (ball_location.x == 0 and ball_location.y == 0)
         impact, impact_time = get_impact(self.get_ball_prediction_struct(), car, Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y, packet.game_ball.physics.location.z), self.renderer)
