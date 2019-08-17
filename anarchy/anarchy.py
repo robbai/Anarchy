@@ -73,7 +73,8 @@ class Anarchy(BaseAgent):
         car_velocity = Vector3(car.physics.velocity)
         car_direction = get_car_facing_vector(car)
         car_to_ball = ball_location - car_location
-        team_sign = (1 if car.team == (packet.teams[car.team].score == 7 and packet.teams[not car.team].score == 0) else -1)
+        is_1v1 = (packet.num_cars == 2 and packet.game_cars[not self.index].team != car.team)
+        team_sign = (1 if car.team == (is_1v1 and packet.teams[car.team].score == 7 and packet.teams[not car.team].score == 0) else -1)
         enemy_goal = Vector2(0, team_sign * 5120)
         kickoff = (ball_location.x == 0 and ball_location.y == 0)
         impact, impact_time = get_impact(self.get_ball_prediction_struct(), car, Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y, packet.game_ball.physics.location.z), self.renderer)
@@ -257,17 +258,17 @@ class Anarchy(BaseAgent):
         if (((car_to_ball.flatten().size < 400 and ball_location.z < 300) or dodge_for_speed) and car_velocity.size > 1100) or self.dodging:
             dodge_at_ball = (impact_time < 0.4)
             dodge_angle = (car_direction.correction_to(car_to_ball) if dodge_at_ball else car_direction.correction_to(car_to_destination))
-            dodge(self, dodge_angle, rotation_velocity, 4 if dodge_at_ball else 1)
+            dodge(self, car, dodge_angle, rotation_velocity, 4 if dodge_at_ball else 1)
 
         # Half-flips
         if backwards and not park_car and (time if wait else impact_time) > 0.6 and car_velocity.size > 900 and abs(turning_radians) < 0.1 or self.halfflipping:
-            halfflip(self, rotation_velocity)
+            halfflip(self, car, rotation_velocity)
 
         # Recovery
         if not (self.dodging or self.halfflipping):
             if not car.has_wheel_contact:
                 self.controller.steer = 0
-                recover(self, rotation_velocity, allow_yaw_wrap = car_location.z > 250)
+                recover(self, car, rotation_velocity, allow_yaw_wrap = car_location.z > 250)
                 self.controller.boost = False
             else:
                 self.controller.roll = 0
