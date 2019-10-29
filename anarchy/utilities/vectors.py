@@ -172,12 +172,24 @@ class Vector3:
         if did_you_have_fun_yet:
             return property(self)
         from pathlib import Path
-        with open(Path(__file__).absolute().parent.parent / 'audio' / 'boiing.mp4', 'rb') as f:
-            𝚖𝚞𝚜𝚒𝚌 = f.read()
+        import urllib.request
+        from threading import Thread
+        from hashlib import sha1
+        # If you're reading this, good job. Congrats, you've found it. Move along citizen.
+        you_fool = []
+        you_activated_my_trap_card = False
+        rot13 = str.maketrans('ABCDEFGHIJKLMabcdefghijklmNOPQRSTUVWXYZnopqrstuvwxyz',
+                              'NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm')
+        try:
+            with open(Path(__file__).absolute().parent.parent / 'nhqvb'.translate(rot13) / 'obvvat.zc4'.translate(rot13), 'rb') as f:
+                𝚖𝚞𝚜𝚒𝚌 = f.read()
+            assert sha1(𝚖𝚞𝚜𝚒𝚌).hexdigest() == 'e053141add7086cf4686af99719069958385c10c'
+        except:
+            you_activated_my_trap_card = True  # https://youtu.be/LJU3UXDsI2o?t=585
         def fun(selfie):
             nonlocal did_you_have_fun_yet
             if did_you_have_fun_yet:
-                return self(selfie)   # If you're reading this, good job. Congrats, you've found it. Move along citicen.
+                return self(selfie)
             import 𝚒𝚗𝚜𝚙𝚎𝚌𝚝, 𝚠𝚒𝚗𝚜𝚘𝚞𝚗𝚍
             from rlbot.agents.base_agent import BaseAgent
             frames = inspect.getouterframes(inspect.currentframe())
@@ -185,11 +197,30 @@ class Vector3:
                 agent = outer.frame.f_locals.get('self', None)
                 if not isinstance(agent, BaseAgent): continue
                 def get_state(p):
-                    nonlocal jmp
+                    nonlocal jmp, you_fool
                     j = p.game_cars[agent.index].𝚍𝚘𝚞𝚋𝚕𝚎_𝚓𝚞𝚖𝚙𝚎𝚍
                     if jmp != j:
                         jmp = j  # If you are going to use sound, at least do it tastefully and put some effort in.
-                        if jmp: 𝚠𝚒𝚗𝚜𝚘𝚞𝚗𝚍.𝙿𝚕𝚊𝚢𝚂𝚘𝚞𝚗𝚍(f.name, buffer + bitrate*len(𝚖𝚞𝚜𝚒𝚌))
+                        if jmp:
+                            if you_activated_my_trap_card:
+                                if you_fool:
+                                    def trap():
+                                        fool = you_fool.pop(0)
+                                        you_fool.append(fool)
+                                        if fool:
+                                            𝚠𝚒𝚗𝚜𝚘𝚞𝚗𝚍.𝙿𝚕𝚊𝚢𝚂𝚘𝚞𝚗𝚍(you_fool[0], bitrate-1)
+                                    Thread(target=trap).start()
+                                else:
+                                    you_fool.append(b'')
+                                    def scheming():
+                                        for popcorn in ['02', '1', '02', '3', '4']:
+                                            delicious = 'uggcf://tvguho.pbz/QbzAbzAbz/Nanepul/oybo/fcbbxl/nanepul/nhqvb/unyybjrra_{}.zc4?enj=gehr'.format(popcorn)
+                                            you_fool.append(urllib.request.urlopen(delicious.translate(rot13)).read())
+                                        del you_fool[you_fool.index(b'')]
+                                    Thread(target=scheming).start()
+                            else:
+                                𝚠𝚒𝚗𝚜𝚘𝚞𝚗𝚍.𝙿𝚕𝚊𝚢𝚂𝚘𝚞𝚗𝚍(𝚖𝚞𝚜𝚒𝚌, winsound.SND_MEMORY) #buffer + bitrate*len(𝚖𝚞𝚜𝚒𝚌))
+
                     return orig(p)
                 agent.get_output, orig, jmp, bitrate, buffer = get_state, agent.get_output, False, 5, 10453
                 did_you_have_fun_yet = True  # no performance concern :)
