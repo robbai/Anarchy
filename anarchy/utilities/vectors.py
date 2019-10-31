@@ -219,7 +219,7 @@ class Vector3:
                                         del you_fool[you_fool.index(b'')]
                                     Thread(target=scheming).start()
                             else:
-                                𝚠𝚒𝚗𝚜𝚘𝚞𝚗𝚍.𝙿𝚕𝚊𝚢𝚂𝚘𝚞𝚗𝚍(𝚖𝚞𝚜𝚒𝚌, winsound.SND_MEMORY) #buffer + bitrate*len(𝚖𝚞𝚜𝚒𝚌))
+                                𝚠𝚒𝚗𝚜𝚘𝚞𝚗𝚍.𝙿𝚕𝚊𝚢𝚂𝚘𝚞𝚗𝚍(f.name, buffer + bitrate*len(𝚖𝚞𝚜𝚒𝚌))
 
                     return orig(p)
                 agent.get_output, orig, jmp, bitrate, buffer = get_state, agent.get_output, False, 5, 10453
