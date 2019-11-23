@@ -58,7 +58,7 @@ class ColoredWireframe:
             #parse color groups
             if line.startswith("o "):
                 group_name, hex_color = line.split(" ")[1].split("_")
-                r, g, b = tuple(int(hex_color[1][i:i+2], 16) for i in (0, 2, 4))
+                r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
                 self.groups.append(ColoredPolygonGroup(
                     name=group_name[0],
@@ -78,34 +78,33 @@ class ColoredWireframe:
                 self.groups[-1].polygons.append(polygon) # append the most recent group
 
 
-    def render(self, renderer: RenderingManager, polygons_per_tick=100):
-        if self.current_color_group < len(self.groups):
-            unique_group_name = str(self.polygons_rendered) + str(self.current_color_group)
-            renderer.begin_rendering(unique_group_name)
+    def render(self, renderer: RenderingManager):
+        for _ in range(10):
+            if self.current_color_group < len(self.groups):
+                unique_group_name = str(self.polygons_rendered) + str(self.current_color_group)
+                renderer.begin_rendering(unique_group_name)
 
-            group: ColoredPolygonGroup = self.groups[self.current_color_group]
-            color = renderer.create_color(255, group.color.R, group.color.G, group.color.B)
+                group: ColoredPolygonGroup = self.groups[self.current_color_group]
+                color = renderer.create_color(255, group.color.R, group.color.G, group.color.B)
 
-            for i in range(polygons_per_tick):
-                if self.polygons_rendered < len(group.polygons):
-                    renderer.draw_polyline_3d(group.polygons[self.polygons_rendered].vertices, color)
-                    self.polygons_rendered += 1
-                else:
-                    self.polygons_rendered = 0
-                    self.current_color_group += 1
-                    break
-            renderer.end_rendering()
+                for i in range(10):
+                    if self.polygons_rendered < len(group.polygons):
+                        renderer.draw_polyline_3d(group.polygons[self.polygons_rendered].vertices, color)
+                        self.polygons_rendered += 1
+                    else:
+                        self.polygons_rendered = 0
+                        self.current_color_group += 1
+                        break
+                renderer.end_rendering()
 
 
-def unzip_and_make_mesh(zip_file: str, obj_file: str) -> ColoredWireframe:
+def unzip_and_build_zero_two() -> ColoredWireframe:
     """
     Extract a zip file into a temp directory, and create a ColoredMesh from a .obj file inside the archive.
     This needs to be done in order to bypass the Anarchy line limit, because .obj is not a binary file and .zip is.
     """
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        tmpdir = Path(tmpdirname)
-        try:
-            with zipfile.ZipFile(Path(__file__).absolute().parent / zip_file, 'r') as zip_ref: zip_ref.extractall(tmpdir)
-        except:
-            with zipfile.ZipFile(str(Path(__file__).absolute().parent / zip_file), 'r') as zip_ref: zip_ref.extractall(tmpdir)
-        return ColoredWireframe(tmpdir / obj_file, 70, Vector3(3500, 0, 0))
+    import os
+    dirpath = os.path.dirname(os.path.realpath(__file__))
+    with zipfile.ZipFile(dirpath + "/nothing.zip","r") as zip_ref:
+        zip_ref.extractall(dirpath)
+    return ColoredWireframe(dirpath + "/zerotwo.obj", 70, Vector3(3500, 0, 0))

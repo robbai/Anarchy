@@ -10,7 +10,7 @@ from rlbot.utils.structures.ball_prediction_struct import BallPrediction, Slice
 from utilities.actions import recover, dodge, halfflip
 from utilities.calculations import invert_angle, get_car_facing_vector, get_ball_bounces, get_impact, distance_from_wall, inside_turning_radius, project_to_wall, estimate_max_speed, closest_boost
 from utilities.vectors import *
-from utilities.render_mesh import unzip_and_make_mesh, ColoredWireframe
+from utilities.render_mesh import unzip_and_build_zero_two, ColoredWireframe
 from utilities.quick_chat_handler import QuickChatHandler
 from utilities.matrix import Matrix3D
 from utilities.aerial import aerial_option_b as Aerial
@@ -56,7 +56,7 @@ class Anarchy(BaseAgent):
     def load_config(self, config_header):
         render_statue = config_header.getboolean("render_statue")
         if render_statue:
-            self.zero_two = unzip_and_make_mesh("nothing.zip", "zerotwo.obj")
+            self.zero_two = unzip_and_build_zero_two()
 
     @staticmethod
     def create_agent_configurations(config: ConfigObject):
@@ -208,7 +208,7 @@ class Anarchy(BaseAgent):
             self.renderer.draw_string_2d(20, 140, 2, 2, "Parking!", self.renderer.yellow())
         self.renderer.end_rendering()
 
-        if self.zero_two is not None:
+        if self.zero_two is not None and self.time > 10.0:
             self.zero_two.render(self.renderer)
 
         # Choose whether to drive backwards or not
