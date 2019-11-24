@@ -15,6 +15,7 @@ from utilities.quick_chat_handler import QuickChatHandler
 from utilities.matrix import Matrix3D
 from utilities.aerial import aerial_option_b as Aerial
 from utilities.demo import Demolition, max_time as max_demo_time
+from utilities.utils import *
 
 # first!
 # WELCOME ROBBIE
@@ -52,6 +53,7 @@ class Anarchy(BaseAgent):
         self.aerial: Optional[Aerial] = None
         self.steer_correction_radians: float = 0
         self.demo: Optional[Demolition] = None
+        self.gamemode: Gamemode = Gamemode.SOCCAR
 
     def load_config(self, config_header):
         render_statue = config_header.getboolean("render_statue")
@@ -67,6 +69,7 @@ class Anarchy(BaseAgent):
         self.quick_chat_handler.handle_quick_chats(packet)
 
         # Collect data from the packet
+        self.mode = (Gamemode.DROPSHOT if self.get_field_info().num_boosts == 0 else Gamemode.SOCCAR)
         self.time = packet.game_info.seconds_elapsed
         ball_location = Vector3(packet.game_ball.physics.location)
         self.car = packet.game_cars[self.index]
@@ -166,8 +169,8 @@ class Anarchy(BaseAgent):
             destination += Vector2(offset * -sign(impact_projection.x), (140 if wait else 0) * -team_sign)
             obey_turning_radius = True
         elif not_our_kickoff or teammate_going_for_ball or self.demo is not None or \
-             (need_boost and (close_boost - car_location.flatten()).length * 5 < car_to_ball.length):
-            destination = close_boost
+             (close_boost and need_boost and (close_boost - car_location.flatten()).length * 5 < car_to_ball.length):
+            if close_boost: destination = close_boost
             obey_turning_radius = True
 
             demo_location = None
@@ -240,6 +243,8 @@ class Anarchy(BaseAgent):
                 self.controller.throttle = 0
         elif (velocity_change > 300 or target_velocity > 1410 or demoing):
             self.controller.boost = (abs(turning_radians) < 0.2 and not self.car.is_super_sonic and not backwards)
+            if self.controller.boost and self.mode is Gamemode.DROPSHOT:
+                self.controller.boost = (30 < self.car.boost - (2200 - car_velocity.length) / ((911 + (2 / 3)) if self.car.has_wheel_contact else 1000) * (100 / 3))
             self.controller.throttle = throttle_sign
         elif velocity_change > -150:
             self.controller.boost = False
