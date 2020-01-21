@@ -1,6 +1,10 @@
-import math
+﻿import math
 from random import triangular as triforce, uniform
 from typing import List
+from pathlib import Path
+import os
+import random
+import winsound
 
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState, BOT_CONFIG_AGENT_HEADER
 from rlbot.parsing.custom_config import ConfigObject
@@ -54,6 +58,7 @@ class Anarchy(BaseAgent):
         self.steer_correction_radians: float = 0
         self.demo: Optional[Demolition] = None
         self.gamemode: Gamemode = Gamemode.SOCCAR
+	self.score = 0
 
     def load_config(self, config_header):
         render_statue = config_header.getboolean("render_statue")
@@ -88,7 +93,15 @@ class Anarchy(BaseAgent):
         correct_side_of_ball: bool = ((impact_projection.y - car_location.y) * team_sign > 0)
         # Hi robbie!
 
-
+	# RUSH B
+        currentScore = 0
+        for i in range(packet.num_teams):
+            currentScore += packet.teams[i].score
+        if currentScore > self.score:
+            self.score = currentScore
+            music_files = os.listdir(f'{Path(__file__).absolute().parent}\\music')
+            randomness = random.randrange(len(music_files))
+            winsound.PlaySound(f"{Path(__file__).absolute().parent}\\music\\{music_files[randomness]}", 131072)
 
         # Handle bouncing
         ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
