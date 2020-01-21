@@ -59,6 +59,9 @@ class Anarchy(BaseAgent):
         self.demo: Optional[Demolition] = None
         self.gamemode: Gamemode = Gamemode.SOCCAR
         self.score = 0
+        self.lastTeam_touch = -1
+        self.music_files = []
+        self.goal_music = True
 
     def load_config(self, config_header):
         render_statue = config_header.getboolean("render_statue")
@@ -94,14 +97,17 @@ class Anarchy(BaseAgent):
         # Hi robbie!
 
 	    # RUSH B
-        currentScore = 0
-        for i in range(packet.num_teams):
-            currentScore += packet.teams[i].score
-        if currentScore > self.score:
-            self.score = currentScore
-            music_files = os.listdir(f'{Path(__file__).absolute().parent}\\music')
-            randomness = random.randrange(len(music_files))
-            winsound.PlaySound(f"{Path(__file__).absolute().parent}\\music\\{music_files[randomness]}", 131072)
+        if self.goal_music:
+            if packet.game_ball.latest_touch.team == self.team:
+                self.lastTeam_touch = packet.game_ball.latest_touch.player_index
+            if packet.teams[self.team].score > self.score:
+                self.score = packet.teams[self.team].score
+                if self.lastTeam_touch == self.index:
+                    if len(self.music_files) < 1:
+                        self.music_files = os.listdir(f'{Path(__file__).absolute().parent}\\music')
+                    randomness = random.randrange(len(self.music_files))
+                    winsound.PlaySound(f"{Path(__file__).absolute().parent}\\music\\{self.music_files[randomness]}", 131072)
+                    self.music_files.pop(randomness)
 
         # Handle bouncing
         ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
