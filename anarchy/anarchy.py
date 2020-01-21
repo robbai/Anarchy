@@ -93,6 +93,7 @@ class Anarchy(BaseAgent):
         impact_projection = project_to_wall(car_location, impact.flatten() - car_location)
         rotation_matrix = Matrix3D([self.car.physics.rotation.pitch, self.car.physics.rotation.yaw, self.car.physics.rotation.roll])
         rotation_velocity = rotation_matrix.dot(self.car.physics.angular_velocity)
+        car_local_velocity = rotation_matrix.dot(car_velocity)
         correct_side_of_ball: bool = ((impact_projection.y - car_location.y) * team_sign > 0)
         # Hi robbie!
 
@@ -276,6 +277,11 @@ class Anarchy(BaseAgent):
         turn = clamp11(turning_radians * 4)
         self.controller.steer = turn
         self.controller.handbrake = (abs(turning_radians) > 1.1 and not self.car.is_super_sonic and not (slow_down or park_car))
+
+        # This makes sure we're not powersliding
+        # if the car is spinning the opposite way we're steering towards or if we're sliding the opposite way we're throttling towards. 
+        if sign(rotation_velocity.z) != sign(self.controller.steer) or sign(car_local_velocity.x) != sign(self.controller.throttle):
+            self.controller.handbrake = False
 
         # Dodging
         self.controller.jump = False
