@@ -59,7 +59,6 @@ class Anarchy(BaseAgent):
 
     def load_config(self, config_header):
         render_statue = config_header.getboolean("render_statue")
-        render_statue = False
         if render_statue:
             self.zero_two = unzip_and_build_zero_two()
 
