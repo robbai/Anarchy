@@ -59,6 +59,7 @@ class Anarchy(BaseAgent):
 
     def load_config(self, config_header):
         render_statue = config_header.getboolean("render_statue")
+        render_statue = False
         if render_statue:
             self.zero_two = unzip_and_build_zero_two()
 
@@ -83,8 +84,10 @@ class Anarchy(BaseAgent):
         is_1v1 = (packet.num_cars == 2 and packet.game_cars[not self.index].team != self.car.team)
         team_sign = (1 if self.car.team == (is_1v1 and packet.teams[self.car.team].score == 7 and packet.teams[not self.car.team].score == 0) else -1)
         enemy_goal = Vector2(0, team_sign * 5120)
-        kickoff = (ball_location.x == 0 and ball_location.y == 0)
-        impact, impact_time = get_impact(self.get_ball_prediction_struct(), self.car, Vector3(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y, packet.game_ball.physics.location.z), self.renderer)
+        kickoff = packet.game_info.is_kickoff_pause
+        ball_prediction = self.get_ball_prediction_struct()
+        impacts = [get_impact(ball_prediction, car, ball_location, self.renderer) for car in packet.game_cars[:packet.num_cars]]
+        impact, impact_time = impacts[self.index]
         impact_projection = project_to_wall(car_location, impact.flatten() - car_location)
         rotation_matrix = Matrix3D([self.car.physics.rotation.pitch, self.car.physics.rotation.yaw, self.car.physics.rotation.roll])
         rotation_velocity = rotation_matrix.dot(self.car.physics.angular_velocity)
@@ -129,20 +132,15 @@ class Anarchy(BaseAgent):
         teammate_going_for_ball: bool = False
         min_teammate_distance = float("inf")
         for index, car in enumerate(packet.game_cars[:packet.num_cars]):
-            if self.car.team == self.team and index != self.index:
-                teammate_to_ball: Vector3 = ball_location - Vector3(self.car.physics.location)
-                vector = get_car_facing_vector(self.car)
-                teammate_facing_direction: Vector3 = Vector3(vector.x, vector.y, 0)
-                teammate_velocity_direction: Vector3 = Vector3(self.car.physics.velocity)
-                min_teammate_distance = min(min_teammate_distance, teammate_to_ball.length)
-                if teammate_to_ball.length < (car_to_ball.length if correct_side_of_ball else max(1.8 * car_to_ball.length, 900)) and teammate_to_ball.y * team_sign > 0 and \
-                        (abs(teammate_to_ball.angle_between(teammate_facing_direction)) < 0.4 * math.pi or
-                         abs(teammate_to_ball.angle_between(teammate_velocity_direction)) < 0.4 * math.pi or
-                         teammate_to_ball.length < 1200):
+            if car.team == self.team and index != self.index:
+                teammate_location = Vector3(car.physics.location)
+                teammate_correct_side_of_ball: bool = ((impacts[index][0].y - teammate_location.y) * team_sign > 0)
+                if correct_side_of_ball and not teammate_correct_side_of_ball: continue
+                if impacts[index][1] + 0.1 < impact_time or (not correct_side_of_ball and teammate_correct_side_of_ball):
                     teammate_going_for_ball = True
                     self.renderer.begin_rendering('teammate')
-                    self.renderer.draw_line_3d(car_location, self.car.physics.location, self.renderer.black())
-                    self.renderer.draw_rect_3d(self.car.physics.location, 4, 4, True, self.renderer.black())
+                    self.renderer.draw_line_3d(car_location, teammate_location, self.renderer.black())
+                    self.renderer.draw_rect_3d(teammate_location, 4, 4, True, self.renderer.black())
                     self.renderer.end_rendering()
                     break
 
@@ -152,11 +150,13 @@ class Anarchy(BaseAgent):
         take_serious_shot = (not kickoff and correct_side_of_ball and impact.y * team_sign > 1000 + min(2, impact_time) * 500)
         obey_turning_radius = True # Slow down if the target is in the turning radius
         demoing = (self.demo is not None)
-        need_boost = (not self.car.is_super_sonic and self.car.boost < 30)
         close_boost = closest_boost(Vector3(-impact.x, impact.y, 0) if teammate_going_for_ball and impact_time < 2.5 and not kickoff else car_location\
                                     , self.get_field_info().boost_pads, packet.game_boosts)
+        convenient_boost = (close_boost and (close_boost - car_location.flatten()).length * 3 < car_to_ball.length)
+        need_boost = (not self.car.is_super_sonic and self.car.boost < (50 if convenient_boost else 30))
         park_car = False
-        not_our_kickoff = (kickoff and min_teammate_distance < car_to_ball.length - 100)
+        not_our_kickoff = (kickoff and teammate_going_for_ball)
+        our_kickoff = (kickoff and not not_our_kickoff)
         
         if wait and bounce_location is not None:
             destination = Vector3(bounce_location.x, bounce_location.y, 0)
@@ -166,17 +166,17 @@ class Anarchy(BaseAgent):
         if kickoff and not not_our_kickoff:
             destination = ball_location + Vector3(0, -92.75 * team_sign, 0)
             obey_turning_radius = False
-        elif avoid_own_goal and not not_our_kickoff and not demoing and (not teammate_going_for_ball or impact.y * team_sign > -4000):
+        elif avoid_own_goal and not kickoff and not demoing and (not teammate_going_for_ball or impact.y * team_sign > -4000):
             offset = (max(0, impact_time - 0.5) * 160 + 110)
             destination += Vector2(offset * -sign(impact_projection.x), (140 if wait else 0) * -team_sign)
             obey_turning_radius = True
-        elif not_our_kickoff or teammate_going_for_ball or self.demo is not None or \
-             (close_boost and need_boost and (close_boost - car_location.flatten()).length * 5 < car_to_ball.length):
+        elif not_our_kickoff or teammate_going_for_ball or demoing or \
+             (close_boost and (need_boost or convenient_boost)):
             if close_boost: destination = close_boost
             obey_turning_radius = True
 
             demo_location = None
-            if not need_boost and not not_our_kickoff:
+            if not (need_boost or not_our_kickoff):
                 if self.demo is None: self.demo = Demolition.start_demo(self, packet)
                 demo_location, demo_time = (self.demo.get_destination(packet) if self.demo is not None else None)
                 if demo_location is not None and (demoing or demo_time < max_demo_time):
@@ -184,7 +184,7 @@ class Anarchy(BaseAgent):
                     obey_turning_radius = False
                     demoing = True
                     time = 0
-            if not demoing or self.demo is None or demo_location is None:
+            if demo_location is None:
                 self.demo = None
                 demoing = False
                 if (not need_boost and car_to_ball.length > 2500) if not not_our_kickoff else (abs(car_location.x) < 50): #Middle
@@ -268,6 +268,8 @@ class Anarchy(BaseAgent):
         # Dodging
         self.controller.jump = False
         dodge_for_speed = (velocity_change > 500 and not backwards and self.car.boost < 14 and self.time > self.next_dodge_time + 0.85 and car_to_destination.size > (2000 if take_serious_shot else 1200) and abs(turning_radians) < 0.1 and not demoing)
+        if kickoff:
+            dodge_for_speed = car_velocity.size > 1250
         if (((car_to_ball.flatten().size < 400 and ball_location.z < 300) or dodge_for_speed) and car_velocity.size > 1100) or self.dodging:
             dodge_at_ball = (impact_time < 0.4)
             dodge_angle = (car_direction.correction_to(car_to_ball) if dodge_at_ball else car_direction.correction_to(car_to_destination))

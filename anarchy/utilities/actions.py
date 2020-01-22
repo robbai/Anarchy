@@ -14,6 +14,7 @@ def recover(self, rotation_velocity: Vector3, roll = True, pitch = True, yaw = T
 
 
 def dodge(self, angle: float, rotation_velocity: Vector3, multiply = 1):
+    self.controller.yaw = 0
     if self.car.has_wheel_contact and not self.dodging:
         self.dodge_angle = angle
         self.dodging = True
@@ -36,6 +37,7 @@ def dodge(self, angle: float, rotation_velocity: Vector3, multiply = 1):
 
 
 def halfflip(self, rotation_velocity: Vector3):
+    self.controller.yaw = 0
     if not self.halfflipping and self.car.has_wheel_contact:
         self.halfflipping = True
         self.controller.jump = True

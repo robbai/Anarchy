@@ -21,7 +21,7 @@ class Slice:
     position: Vector3
 
 
-def displacement(x, b, c, d, e): return (x ** 3) * b + (x ** 2) * c + x * d + e
+def displacement(x, a, b, c, d): return a + b * (x) + c * (x ** 2) + d * (x ** 3)
 def displacement_curve(x, curve): return displacement(x, curve[0], curve[1], curve[2], curve[3])
 
 
@@ -42,7 +42,11 @@ class Demolition:
 
         # Fit the curves
         data_x, data_y, data_z, data_t = self.get_data()
-        popt_x, popt_y, popt_z = (curve_fit(displacement, data_t, data_x)[0], curve_fit(displacement, data_t, data_y)[0], curve_fit(displacement, data_t, data_z)[0])
+        try:
+            popt_x, popt_y, popt_z = (curve_fit(displacement, data_t, data_x)[0], curve_fit(displacement, data_t, data_y)[0], curve_fit(displacement, data_t, data_z)[0])
+        except Exception as e:
+            print('error when trying to demo! probably lacking data')
+            popt_x, popt_y, popt_z = [(self.positions[0].position.x if i == 0 else (victim.physics.velocity.x if i == 1 else 0)) for i in range(polynomial_degree + 1)], [(self.positions[0].position.y if i == 0 else (victim.physics.velocity.y if i == 1 else 0)) for i in range(polynomial_degree + 1)], [(self.positions[0].position.z if i == 0 else (victim.physics.velocity.z if i == 1 else 0)) for i in range(polynomial_degree + 1)]
 
         destination = None
         victim_locations = []
@@ -57,7 +61,8 @@ class Demolition:
         # Render
         if destination is not None:
             self.agent.renderer.begin_rendering(Demolition.get_render_name(self.agent))
-            if len(victim_locations) > 1: self.agent.renderer.draw_polyline_3d([victim_locations[i] for i in np.linspace(0, len(victim_locations) - 1, len(victim_locations) / int(render_dt / dt)).astype(int)], self.agent.renderer.orange())
+            #if len(victim_locations) > 1: self.agent.renderer.draw_polyline_3d([victim_locations[i] for i in np.linspace(0, len(victim_locations) - 1, len(victim_locations) / int(render_dt / dt)).astype(int)], self.agent.renderer.orange())
+            if len(victim_locations) > 1: self.agent.renderer.draw_polyline_3d([victim_locations[i] for i in range(0, len(victim_locations), int(render_dt / dt))], self.agent.renderer.orange())
             self.agent.renderer.draw_string_3d(destination, 1, 1, str(round(t - time_now, 2)) + "s", self.agent.renderer.yellow())
             self.agent.renderer.end_rendering()
             return destination, t - time_now

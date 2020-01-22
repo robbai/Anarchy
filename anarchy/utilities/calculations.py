@@ -83,7 +83,7 @@ def estimate_max_speed(car, cap_at_sonic: bool = True):
 
 
 def get_impact(path: BallPrediction, car, ball_position: Vector3, renderer = None) -> Tuple[Vector3, float]:
-    car_position = Vector3(car.physics.location.x, car.physics.location.y, car.physics.location.z)
+    car_position = Vector3(car.physics.location)
     prev_slice = ball_position
 
     bt = (bounce_time(car.physics.location.z - 17.010000228881836, -car.physics.velocity.z) if not car.has_wheel_contact else 0)
