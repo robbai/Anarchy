@@ -1,10 +1,6 @@
 ﻿import math
 from random import triangular as triforce, uniform
 from typing import List
-from pathlib import Path
-import os
-import random
-import winsound
 
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState, BOT_CONFIG_AGENT_HEADER
 from rlbot.parsing.custom_config import ConfigObject
@@ -20,6 +16,7 @@ from utilities.matrix import Matrix3D
 from utilities.aerial import aerial_option_b as Aerial
 from utilities.demo import Demolition, max_time as max_demo_time
 from utilities.utils import *
+from utilities.jukebox import Jukebox
 
 # first!
 # WELCOME ROBBIE
@@ -58,10 +55,7 @@ class Anarchy(BaseAgent):
         self.steer_correction_radians: float = 0
         self.demo: Optional[Demolition] = None
         self.gamemode: Gamemode = Gamemode.SOCCAR
-        self.score = 0
-        self.lastTeam_touch = -1
-        self.music_files = []
-        self.goal_music = True
+        self.jukebox: Jukebox = Jukebox(self)
 
     def load_config(self, config_header):
         render_statue = config_header.getboolean("render_statue")
@@ -75,6 +69,7 @@ class Anarchy(BaseAgent):
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         self.quick_chat_handler.handle_quick_chats(packet)
+        self.jukebox.update(packet)
 
         # Collect data from the packet
         self.mode = (Gamemode.DROPSHOT if self.get_field_info().num_boosts == 0 else Gamemode.SOCCAR)
@@ -96,19 +91,6 @@ class Anarchy(BaseAgent):
         car_local_velocity = rotation_matrix.dot(car_velocity)
         correct_side_of_ball: bool = ((impact_projection.y - car_location.y) * team_sign > 0)
         # Hi robbie!
-
-	    # RUSH B
-        if self.goal_music:
-            if packet.game_ball.latest_touch.team == self.team:
-                self.lastTeam_touch = packet.game_ball.latest_touch.player_index
-            if packet.teams[self.team].score > self.score:
-                self.score = packet.teams[self.team].score
-                if self.lastTeam_touch == self.index:
-                    if len(self.music_files) < 1:
-                        self.music_files = os.listdir(f'{Path(__file__).absolute().parent}\\music')
-                    randomness = random.randrange(len(self.music_files))
-                    winsound.PlaySound(f"{Path(__file__).absolute().parent}\\music\\{self.music_files[randomness]}", 131072)
-                    self.music_files.pop(randomness)
 
         # Handle bouncing
         ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
