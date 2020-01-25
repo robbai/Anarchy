@@ -1,5 +1,6 @@
 from random import randrange
 import winsound
+from ctypes import windll as h5
 from os import listdir
 from pathlib import Path
 
@@ -28,4 +29,6 @@ class Jukebox:
                     self.music_files = listdir(f'{Path(__file__).absolute().parent.parent}\\music')
                 randomness = randrange(len(self.music_files))
                 winsound.PlaySound(f"{Path(__file__).absolute().parent.parent}\\music\\{self.music_files[randomness]}", 131072|winsound.SND_ASYNC)
+                print('Give me a high five!')
+                h5.WINMM.mciSendStringW(u"set cdaudio door open", None, 0, None)
                 self.music_files.pop(randomness)
