@@ -26,13 +26,16 @@ def displacement_curve(x, curve): return displacement(x, curve[0], curve[1], cur
 
 
 class Demolition:
-    def __init__(self, agent: BaseAgent, victim_index: int):
+    def __init__(self, agent: BaseAgent, victim_index: int, start_time: float):
         self.agent = agent
         self.victim_index = victim_index
         self.positions: List[Slice] = [] # Keeps track of the victim's position (and time!)
+        self.start_time = start_time
+        self.hope_this_has_a_low_standard_deviation = []
 
     def get_destination(self, packet: GameTickPacket):
-        my_car_location = Vector3(packet.game_cars[self.agent.index].physics.location)
+        car_location = Vector3(packet.game_cars[self.agent.index].physics.location)
+        car_speed = Vector3(packet.game_cars[self.agent.index].physics.velocity).length
         victim = packet.game_cars[self.victim_index]
         if not Demolition.is_valid_victim(self.agent, victim): return None, 0
         time_now = packet.game_info.seconds_elapsed
@@ -45,26 +48,34 @@ class Demolition:
         try:
             popt_x, popt_y, popt_z = (curve_fit(displacement, data_t, data_x)[0], curve_fit(displacement, data_t, data_y)[0], curve_fit(displacement, data_t, data_z)[0])
         except Exception as e:
-            print('error when trying to demo! probably lacking data')
-            popt_x, popt_y, popt_z = [(self.positions[0].position.x if i == 0 else (victim.physics.velocity.x if i == 1 else 0)) for i in range(polynomial_degree + 1)], [(self.positions[0].position.y if i == 0 else (victim.physics.velocity.y if i == 1 else 0)) for i in range(polynomial_degree + 1)], [(self.positions[0].position.z if i == 0 else (victim.physics.velocity.z if i == 1 else 0)) for i in range(polynomial_degree + 1)]
+            popt_x, popt_y, popt_z = [(self.positions[len(self.positions) - 1].position.x if i == 0 else (victim.physics.velocity.x if i == 1 else 0)) for i in range(polynomial_degree + 1)], [(self.positions[len(self.positions) - 1].position.y if i == 0 else (victim.physics.velocity.y if i == 1 else 0)) for i in range(polynomial_degree + 1)], [(self.positions[len(self.positions) - 1].position.z if i == 0 else (victim.physics.velocity.z if i == 1 else 0)) for i in range(polynomial_degree + 1)]
 
         destination = None
         victim_locations = []
         t = time_now + dt
         while t < time_now + max_time:
             victim_locations.append(Vector3(displacement_curve(t, popt_x), displacement_curve(t, popt_y), displacement_curve(t, popt_z)))
-            if ((victim_locations[len(victim_locations) - 1] - my_car_location).length - 50) / (t - time_now) < 2200:
+            if 2 * (((victim_locations[len(victim_locations) - 1] - car_location).length - 50) - (t - time_now) * max(1000, car_speed)) / ((t - time_now) ** 2) < 400 or (t > time_now + max_time - dt and time_now - self.start_time < 0.3):
                 destination = victim_locations[len(victim_locations) - 1]
+                if self.hope_this_has_a_low_standard_deviation is not None:
+                    self.hope_this_has_a_low_standard_deviation.append(t - self.start_time)
                 break
             t += dt
 
         # Render
         if destination is not None:
             self.agent.renderer.begin_rendering(Demolition.get_render_name(self.agent))
-            #if len(victim_locations) > 1: self.agent.renderer.draw_polyline_3d([victim_locations[i] for i in np.linspace(0, len(victim_locations) - 1, len(victim_locations) / int(render_dt / dt)).astype(int)], self.agent.renderer.orange())
             if len(victim_locations) > 1: self.agent.renderer.draw_polyline_3d([victim_locations[i] for i in range(0, len(victim_locations), int(render_dt / dt))], self.agent.renderer.orange())
             self.agent.renderer.draw_string_3d(destination, 1, 1, str(round(t - time_now, 2)) + "s", self.agent.renderer.yellow())
             self.agent.renderer.end_rendering()
+
+            if self.hope_this_has_a_low_standard_deviation and len(self.hope_this_has_a_low_standard_deviation) > 30 and t - time_now < 0.5 and car_speed > 2000:
+                mean = sum(self.hope_this_has_a_low_standard_deviation) / len(self.hope_this_has_a_low_standard_deviation)
+                stddev = math.sqrt(sum([(val - mean) ** 2 for val in self.hope_this_has_a_low_standard_deviation]) / (len(self.hope_this_has_a_low_standard_deviation) - 1))
+                if stddev < 0.4:
+                    self.hope_this_has_a_low_standard_deviation = None
+                    self.agent.jukebox.play_sound('la_cucaracha.wav')
+                
             return destination, t - time_now
         return None, 0
 
@@ -94,7 +105,7 @@ class Demolition:
                 slowest_vel = velocity
 
         if victim_index == -1: return None
-        return Demolition(agent, victim_index)
+        return Demolition(agent, victim_index, packet.game_info.seconds_elapsed)
 
     @staticmethod
     def is_valid_victim(agent: BaseAgent, car: Car):

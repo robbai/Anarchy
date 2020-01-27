@@ -175,10 +175,10 @@ class Anarchy(BaseAgent):
             obey_turning_radius = True
 
             demo_location = None
-            if not (need_boost or not_our_kickoff):
-                if self.demo is None: self.demo = Demolition.start_demo(self, packet)
-                demo_location, demo_time = (self.demo.get_destination(packet) if self.demo is not None else None)
-                if demo_location is not None and (demoing or demo_time < max_demo_time):
+            if (demoing or not need_boost) and not kickoff:
+                if not demoing: self.demo = Demolition.start_demo(self, packet)
+                demo_location, demo_time = (self.demo.get_destination(packet) if self.demo is not None else (None, 0))
+                if demo_location is not None:
                     destination = demo_location
                     obey_turning_radius = False
                     demoing = True

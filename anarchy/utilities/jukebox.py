@@ -15,6 +15,14 @@ class Jukebox:
         self.last_team_touch = -1
         self.music_files = []
         self.goal_music = goal_music
+        self.demolitions = 0
+
+    def play_sound(self, file_name: str, music: bool=False):
+        try:
+            path = f"{Path(__file__).absolute().parent.parent}\\{'music' if music else 'audio'}\\{file_name}"
+            winsound.PlaySound(path, winsound.SND_FILENAME)
+        except Exception as e:
+            print(e)
 
     def update(self, packet: GameTickPacket) -> None:
         if not self.goal_music:
@@ -28,7 +36,7 @@ class Jukebox:
                 if len(self.music_files) < 1:
                     self.music_files = listdir(f'{Path(__file__).absolute().parent.parent}\\music')
                 randomness = randrange(len(self.music_files))
-                winsound.PlaySound(f"{Path(__file__).absolute().parent.parent}\\music\\{self.music_files[randomness]}", 131072|winsound.SND_ASYNC)
+                self.play_sound(self.music_files[randomness], music=True)
                 print('Give me a high five!')
                 h5.WINMM.mciSendStringW(u"set cdaudio door open", None, 0, None)
                 self.music_files.pop(randomness)
