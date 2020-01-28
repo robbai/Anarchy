@@ -37,6 +37,8 @@ def dodge(self, angle: float, rotation_velocity: Vector3, multiply = 1):
 
 
 def halfflip(self, rotation_velocity: Vector3):
+    self.controller.roll = 0
+    self.controller.pitch = 0
     self.controller.yaw = 0
     if not self.halfflipping and self.car.has_wheel_contact:
         self.halfflipping = True

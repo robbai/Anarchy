@@ -17,6 +17,9 @@ from utilities.aerial import aerial_option_b as Aerial
 from utilities.demo import Demolition, max_time as max_demo_time
 from utilities.utils import *
 from utilities.jukebox import Jukebox
+from utilities.action.action import ActionBase
+from utilities.action.dodge import Dodge
+from utilities.action.recover import Recover
 
 # first!
 # WELCOME ROBBIE
@@ -55,10 +58,15 @@ class Anarchy(BaseAgent):
         self.steer_correction_radians: float = 0
         self.demo: Optional[Demolition] = None
         self.gamemode: Gamemode = Gamemode.SOCCAR
-        self.jukebox: Jukebox = Jukebox(self)
+        self.jukebox: Jukebox = Jukebox(self, goal_music=False)
+        self.action: ActionBase = None
+        self.rotation_matrix: Matrix3D = None
+        self.rotation_velocity: Vector3 = None
+        self.car_direction: Vector3 = None
 
     def load_config(self, config_header):
         render_statue = config_header.getboolean("render_statue")
+        render_statue = False
         if render_statue:
             self.zero_two = unzip_and_build_zero_two()
 
@@ -79,6 +87,7 @@ class Anarchy(BaseAgent):
         car_location = Vector3(self.car.physics.location)
         car_velocity = Vector3(self.car.physics.velocity)
         car_direction = get_car_facing_vector(self.car)
+        self.car_direction = car_direction
         car_to_ball = ball_location - car_location
         is_1v1 = (packet.num_cars == 2 and packet.game_cars[not self.index].team != self.car.team)
         team_sign = (1 if self.car.team == (is_1v1 and packet.teams[self.car.team].score == 7 and packet.teams[not self.car.team].score == 0) else -1)
@@ -89,10 +98,19 @@ class Anarchy(BaseAgent):
         impact, impact_time = impacts[self.index]
         impact_projection = project_to_wall(car_location, impact.flatten() - car_location)
         rotation_matrix = Matrix3D([self.car.physics.rotation.pitch, self.car.physics.rotation.yaw, self.car.physics.rotation.roll])
+        self.rotation_matrix = rotation_matrix
         rotation_velocity = rotation_matrix.dot(self.car.physics.angular_velocity)
+        self.rotation_velocity = rotation_velocity
         car_local_velocity = rotation_matrix.dot(car_velocity)
         correct_side_of_ball: bool = ((impact_projection.y - car_location.y) * team_sign > 0)
         # Hi robbie!
+
+        # Action.
+        if self.action:
+            print(self.action.__class__.__name__)
+            if not hasattr(self.action, 'finished') or not self.action.finished:
+                return self.action.step(packet)
+            self.action = None
 
         # Handle bouncing
         ball_bounces: List[Slice] = get_ball_bounces(self.get_ball_prediction_struct())
@@ -271,22 +289,17 @@ class Anarchy(BaseAgent):
             dodge_for_speed = car_velocity.size > 1250
         if (((car_to_ball.flatten().size < 400 and ball_location.z < 300) or dodge_for_speed) and car_velocity.size > 1100) or self.dodging:
             dodge_at_ball = (impact_time < 0.4)
-            dodge_angle = (car_direction.correction_to(car_to_ball) if dodge_at_ball else car_direction.correction_to(car_to_destination))
-            dodge(self, dodge_angle, rotation_velocity, 4 if dodge_at_ball else 1)
+            dodge_direction = (car_to_ball if dodge_at_ball else car_to_destination)
+            self.action = Dodge(self, dodge_direction)
+            return self.action.step(packet)
 
         # Half-flips
         if backwards and not park_car and (time if wait else impact_time) > 0.6 and car_velocity.size > 900 and abs(turning_radians) < 0.1 or self.halfflipping:
             halfflip(self, rotation_velocity)
 
         # Recovery
-        if not (self.dodging or self.halfflipping):
-            if not self.car.has_wheel_contact:
-                self.controller.steer = 0
-                recover(self, rotation_velocity, allow_yaw_wrap = car_location.z > 250)
-                self.controller.boost = False
-            else:
-                self.controller.roll = 0
-                self.controller.pitch = 0
-                self.controller.yaw = 0
+        if not (self.dodging or self.halfflipping) and not self.car.has_wheel_contact:
+            self.action = Recover(self, rotation_velocity, allow_yaw_wrap=(car_location.z > 250))
+            return self.action.step(packet)
 
         return self.controller
