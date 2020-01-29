@@ -4,7 +4,7 @@ Anarchy is a Rocket League bot for the RLBot framework with one twist - anyone c
 
 @AnarchyHelper is the GitHub bot that oversees all pull requests. It will accept any pull request as long as you don't exceed your line allowance. The code used to run the GitHub bot is available at [TheBlocks/AnarchyHelper](https://github.com/TheBlocks/AnarchyHelper).
 
-You are allowed a maximum of 100 lines of additions and 50 lines of deletions. You get 25 lines of additions and deletions each added to your allowance every 12 hours (at 12am and 12pm UTC).
+You are allowed a maximum of 200 lines of additions and 100 lines of deletions. You get 100 lines of additions and 50 lines of deletions added to your allowance every 12 hours (at 12am and 12pm UTC).
 
 ## Adding code to Anarchy
 1. Create your own fork of this repository.
