@@ -23,9 +23,10 @@ class Dodge(ActionBase):
         if packet.game_info.seconds_elapsed < self.start_time + self.first_jump_duration: controller.jump = True
         if packet.game_info.seconds_elapsed > self.start_time + self.second_jump_time and not self.finished:
             controller.jump = True
-            angle = math.atan2(self.local.y, self.local.x)
-            controller.pitch = -math.cos(angle)
-            controller.yaw = math.sin(angle)
+            if not packet.game_cars[self.agent.index].double_jumped:
+                angle = math.atan2(self.local.y, self.local.x)
+                controller.pitch = -math.cos(angle)
+                controller.yaw = math.sin(angle)
         if packet.game_info.seconds_elapsed - self.start_time > self.second_jump_time + self.second_jump_duration * (not packet.game_cars[self.agent.index].has_wheel_contact):
             self.finished = True
         return controller

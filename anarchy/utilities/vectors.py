@@ -105,6 +105,9 @@ class Vector2:
         # A shorthand to get a normalized (length 1) copy of this vector.
         if self.size == 0: return Vector2(self.x, self.y)
         return self / self.size
+		
+    def dot(self, v: "Vector2"):
+        return self.x * v.x + self.y * v.y
 
 
 class Vector3:

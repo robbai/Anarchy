@@ -82,30 +82,46 @@ def estimate_max_speed(car, cap_at_sonic: bool = True):
     return min(2200.0 if cap_at_sonic else 2300.0, 1410.0 + boost / 33.3 * 991.667)
 
 
-def get_impact(path: BallPrediction, car, ball_position: Vector3, renderer = None) -> Tuple[Vector3, float]:
+def throttle_acceleration(speed: float):
+    speed = min(2300, abs(speed))
+    if speed < 1400:
+        return 1600 + speed * -144 / 140
+    elif speed < 1410:
+        return 160 + (speed - 1400) * -16
+    return 0
+def get_impact(path: BallPrediction, car, start_time: float, renderer = None) -> Tuple[Vector3, float]:
+    wheel_contact = car.has_wheel_contact
+    ground_time = (bounce_time(car.physics.location.z - 17.010000228881836, -car.physics.velocity.z) if not wheel_contact else 0)
     car_position = Vector3(car.physics.location)
-    prev_slice = ball_position
-
-    bt = (bounce_time(car.physics.location.z - 17.010000228881836, -car.physics.velocity.z) if not car.has_wheel_contact else 0)
-    u = Vector3(car.physics.velocity.x, car.physics.velocity.y, car.physics.velocity.z).length
-    v = estimate_max_speed(car)
+    car_velocity = Vector3(car.physics.velocity)
+    if not wheel_contact:
+        car_position += Vector3(car.physics.velocity) * ground_time
+        car_position.z = 0
+        car_velocity.z = 0
+    car_speed = car_velocity.length
+    car_distance = 0
+    boost = car.boost
+    last_time = start_time
     for i in range(0, path.num_slices):
-        current_slice: Vector3 = Vector3(path.slices[i].physics.location.x, path.slices[i].physics.location.y, path.slices[i].physics.location.z)
-
-        s = ((current_slice - car_position).length - 92.75)
-        t = (float(i) / 60) - bt
-        a = (991.667 if car.boost > 0 else 0) + (0 if u > 1410 else 800) #Bad estimation
-        t_a = (0 if a == 0 else (v - u) / a)
-        mx_s = ((t + (t - t_a)) / 2 * v + u * t)
-
-        if mx_s > s:
-            if renderer is not None:
-                renderer.begin_rendering("Impact")
-                renderer.draw_line_3d([ball_position.x, ball_position.y, ball_position.z], [current_slice.x, current_slice.y, current_slice.z], renderer.red())
-                renderer.end_rendering()
-            return current_slice, t
-
-    return ball_position, 0 #Couldn't find a point of impact
+        current_slice: Slice = path.slices[i]
+        last_slice: bool = (i == path.num_slices - 1)
+        slice_position: Vector3 = Vector3(current_slice.physics.location.x, current_slice.physics.location.y, current_slice.physics.location.z)
+        distance = ((slice_position - car_position).length - 92.75)
+        time = current_slice.game_seconds - start_time
+        if time >= ground_time or last_slice:         
+            delta_time = time - last_time
+            acceleration = throttle_acceleration(car_speed) + (boost >= 1) * 911 + (2 / 3)
+            car_distance += car_speed * delta_time + 0.5 * acceleration * delta_time ** 2
+            car_speed += acceleration * delta_time
+            boost -= 33.3 * delta_time
+            if car_distance > distance or last_slice:
+                if renderer is not None:
+                    renderer.begin_rendering("Impact")
+                    renderer.draw_line_3d(car_position, slice_position, renderer.cyan() if car.team == 0 else renderer.orange())
+                    renderer.end_rendering()
+                return slice_position, time
+        last_time = time
+    return None, 0 # Couldn't find a point of impact
 
 
 def distance_from_wall(point: Vector2) -> float:
