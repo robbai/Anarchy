@@ -1,5 +1,5 @@
 ﻿import math
-from random import triangular as triforce, uniform
+from random import triangular as triforce, uniform, randint
 from typing import List
 
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState, BOT_CONFIG_AGENT_HEADER
@@ -110,6 +110,13 @@ class Anarchy(BaseAgent):
         car_local_velocity = rotation_matrix.dot(car_velocity)
         correct_side_of_ball: bool = ((impact_projection.y - car_location.y) * team_sign > 0)
         # Hi robbie!
+
+        #this kinda kills the anime and idk what to do about it
+        self.renderer.begin_rendering("disco")
+        for i in range(100):
+            hmmm = ball_location+Vector3(random.randint(-1000,1000),random.randint(-1000,1000),random.randint(-1000,1000))
+            self.renderer.draw_line_3d([ball_location.x,ball_location.y,ball_location.z],[hmmm.x,hmmm.y,hmmm.z],self.renderer.create_color(255,random.randint(0,255),random.randint(0,255),random.randint(0,255)))
+        self.renderer.end_rendering()
 
         # Action.
         if self.action:
@@ -258,7 +265,7 @@ class Anarchy(BaseAgent):
             self.renderer.clear_screen(Demolition.get_render_name(self))
         if park_car:
             self.renderer.draw_string_2d(20, 140, 2, 2, "Parking!", self.renderer.yellow())
-        self.renderer.end_rendering()
+        self.renderer.end_rendering()        
 
         if self.zero_two is not None and self.time > 10.0:
             self.zero_two.render(self.renderer)
