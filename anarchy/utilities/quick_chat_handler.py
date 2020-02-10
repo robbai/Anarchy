@@ -8,18 +8,32 @@ from rlbot.utils.structures.quick_chats import QuickChats
 from rlbot.agents.base_agent import BaseAgent
 
 
-_SCORED_ON: List[int] = [QuickChats.Compliments_NiceShot, QuickChats.Compliments_NiceOne, QuickChats.Custom_Compliments_proud,
-                         QuickChats.Custom_Compliments_GC, QuickChats.Custom_Compliments_Pro, QuickChats.Reactions_Noooo]
-_HAS_SCORED: List[int] = [QuickChats.Reactions_Whew, QuickChats.Compliments_WhatASave, QuickChats.Reactions_Calculated]
+_SCORED_ON: List[int] = [
+    QuickChats.Compliments_NiceShot,
+    QuickChats.Compliments_NiceOne,
+    QuickChats.Custom_Compliments_proud,
+    QuickChats.Custom_Compliments_GC,
+    QuickChats.Custom_Compliments_Pro,
+    QuickChats.Reactions_Noooo,
+]
+_HAS_SCORED: List[int] = [
+    QuickChats.Reactions_Whew,
+    QuickChats.Compliments_WhatASave,
+    QuickChats.Reactions_Calculated,
+]
 _HAS_DEMOED: List[int] = [QuickChats.Apologies_Whoops, QuickChats.Custom_Useful_Demoing]
-_GOT_DEMOED: List[int] = [QuickChats.Custom_Toxic_DeAlloc, QuickChats.Apologies_Cursing, QuickChats.Reactions_Wow,
-                          QuickChats.Compliments_Thanks]
+_GOT_DEMOED: List[int] = [
+    QuickChats.Custom_Toxic_DeAlloc,
+    QuickChats.Apologies_Cursing,
+    QuickChats.Reactions_Wow,
+    QuickChats.Compliments_Thanks,
+]
 _MINE: List[int] = [32, 49, 53, 0]
 _BOOST: List[int] = [4, 6, 8, 1]
 
 
 class Spam(threading.Thread):
-    def __init__(self, handler: 'QuickChatHandler', chats: List[int]):
+    def __init__(self, handler: "QuickChatHandler", chats: List[int]):
         super(Spam, self).__init__()
         self.handler = handler
         self.chats = chats
@@ -54,7 +68,14 @@ class QuickChatHandler:
             spam = Spam(self, _HAS_DEMOED)
         if spam is None:
             try:
-                spam=Spam(self, _MINE) if (('' + packet.game_ball.latest_touch.player_name) != ('' + self.prev_touch_name) and (''+packet.game_ball.latest_touch.player_name)==self.agent.name) else (Spam(self, _BOOST) if packet.game_cars[self.agent.index].boost==13 else None)
+                spam = (
+                    Spam(self, _MINE)
+                    if (
+                        ("" + packet.game_ball.latest_touch.player_name) != ("" + self.prev_touch_name)
+                        and ("" + packet.game_ball.latest_touch.player_name) == self.agent.name
+                    )
+                    else (Spam(self, _BOOST) if packet.game_cars[self.agent.index].boost == 13 else None)
+                )
             except:
                 print("oops")
         if spam is not None:
