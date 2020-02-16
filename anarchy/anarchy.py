@@ -171,16 +171,19 @@ class Anarchy(BaseAgent):
                     self.renderer.draw_line_3d(car_location, car_location + self.aerial.target, self.renderer.white())
                     self.renderer.end_rendering()
                 return aerial_output
-        if self.aerial is None and self.car.has_wheel_contact and \
-            impact.z - self.car.physics.location.z > 500 and \
-            car_velocity.length > 100 and self.demo is None and \
-            (self.car.boost > 20 or
-                (abs(time - 0.6) < 0.1 and (impact - car_location).flatten().length < 1000)) and \
-            abs(self.steer_correction_radians) < 0.4 and impact_time < 2.5 and \
-            (impact_projection.y * team_sign > -5000 or abs(impact_projection.x) > 1000) and \
-            math.cos(car_velocity.angle_between(
-                impact - car_location)) * car_velocity.flatten().length > 400:
-                # Start a new aerial
+        if (
+            self.aerial is None
+            and self.car.has_wheel_contact
+            and impact.z - self.car.physics.location.z > 500
+            and car_velocity.length > 100
+            and self.demo is None
+            and (self.car.boost > 20 or (abs(time - 0.6) < 0.1 and (impact - car_location).flatten().length < 1000))
+            and abs(self.steer_correction_radians) < 0.4
+            and impact_time < 2.5
+            and (impact_projection.y * team_sign > -5000 or abs(impact_projection.x) > 1000)
+            and math.cos(car_velocity.angle_between(impact - car_location)) * car_velocity.flatten().length > 400
+        ):
+            # Start a new aerial
             self.aerial = Aerial(self.time)
             return self.aerial.execute(packet, self.index, self.get_ball_prediction_struct())
 
@@ -371,9 +374,7 @@ class Anarchy(BaseAgent):
             abs(turning_radians) > 1.1 and not self.car.is_super_sonic and not (slow_down or park_car)
         )
 
-        # This makes sure we're not powersliding
-        # if the car is spinning the opposite way we're steering towards
-        # or if we're sliding the opposite way we're throttling towards.
+        # prevent inefficient powerslides
         if sign(rotation_velocity.z) != sign(self.controller.steer) or sign(car_local_velocity.x) != sign(
             self.controller.throttle
         ):
