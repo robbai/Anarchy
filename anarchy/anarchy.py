@@ -123,6 +123,8 @@ class Anarchy(BaseAgent):
         car_local_velocity = rotation_matrix.dot(car_velocity)
         correct_side_of_ball: bool = ((impact_projection.y - car_location.y) * team_sign > 0)
         # Hi robbie!
+        if self.time == packet.game_ball.latest_touch.time_seconds:
+            print('\a') # for all the people who mute anarchy because they dont like 'boing' :)
 
         # this kinda kills the anime and idk what to do about it
         self.renderer.begin_rendering("disco")
