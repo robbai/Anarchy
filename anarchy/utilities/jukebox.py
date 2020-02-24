@@ -34,7 +34,9 @@ class Jukebox:
             self.score = packet.teams[self.agent.team].score
             if self.last_team_touch == self.agent.index:
                 if len(self.music_files) < 1:
-                    self.music_files = listdir(f"{Path(__file__).absolute().parent.parent}\\music")
+                    self.music_files = listdir(
+                        f"{Path(__file__).absolute().parent.parent}\\music"
+                    )
                 randomness = randrange(len(self.music_files))
                 self.play_sound(self.music_files[randomness], music=True)
                 print("Give me a high five!")

@@ -7,7 +7,9 @@ from utilities.vectors import Vector3
 
 
 class Recover(ActionBase):
-    def __init__(self, agent, roll=True, pitch=True, yaw=True, allow_yaw_wrap: bool = True):
+    def __init__(
+        self, agent, roll=True, pitch=True, yaw=True, allow_yaw_wrap: bool = True
+    ):
         self.agent = agent
         self.roll = roll
         self.pitch = pitch
@@ -16,9 +18,16 @@ class Recover(ActionBase):
         self.finished: bool = False
 
     def step(self, packet: GameTickPacket) -> SimpleControllerState:
-        local = self.agent.rotation_matrix.dot(self.agent.impact - Vector3(self.agent.car.physics.location))
+        local = self.agent.rotation_matrix.dot(
+            self.agent.impact - Vector3(self.agent.car.physics.location)
+        )
         steer_correction_radians = math.atan2(local.y, local.x)
-        wrap_yaw = self.allow_yaw_wrap and abs(steer_correction_radians) > math.pi * 0.75 and self.pitch and self.yaw
+        wrap_yaw = (
+            self.allow_yaw_wrap
+            and abs(steer_correction_radians) > math.pi * 0.75
+            and self.pitch
+            and self.yaw
+        )
         controller: SimpleControllerState = SimpleControllerState()
         if self.roll:
             controller.roll = clamp11(
@@ -37,8 +46,14 @@ class Recover(ActionBase):
                     + self.agent.rotation_velocity.y * 0.8
                 )
             if self.yaw:
-                yaw = invert_angle(steer_correction_radians) if wrap_yaw else steer_correction_radians
-                controller.yaw = clamp11(yaw * 3.75 - self.agent.rotation_velocity.z * 0.95)
+                yaw = (
+                    invert_angle(steer_correction_radians)
+                    if wrap_yaw
+                    else steer_correction_radians
+                )
+                controller.yaw = clamp11(
+                    yaw * 3.75 - self.agent.rotation_velocity.z * 0.95
+                )
         controller.throttle = 0.03  # Don't turtle.
         controller.jump = False
         if not self.finished:

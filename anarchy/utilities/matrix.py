@@ -18,7 +18,9 @@ class Matrix3D:
         ]
 
     def dot(self, vector):
-        return Vector3(self.data[0].dot(vector), self.data[1].dot(vector), self.data[2].dot(vector))
+        return Vector3(
+            self.data[0].dot(vector), self.data[1].dot(vector), self.data[2].dot(vector)
+        )
 
     def __getitem__(self, item: int):
         return self.data[item]
