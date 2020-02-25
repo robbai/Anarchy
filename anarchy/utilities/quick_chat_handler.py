@@ -42,7 +42,9 @@ class Spam(threading.Thread):
 
     def run(self):
         for i in range(self.count):
-            self.handler.agent.send_quick_chat(QuickChats.CHAT_EVERYONE, random.choice(self.chats))
+            self.handler.agent.send_quick_chat(
+                QuickChats.CHAT_EVERYONE, random.choice(self.chats)
+            )
             time.sleep(self.pause)
 
 
@@ -60,28 +62,42 @@ class QuickChatHandler:
 
         if current_score[self.agent.team] > self.prev_frame_score[self.agent.team]:
             spam = Spam(self, _HAS_SCORED)
-        if current_score[not self.agent.team] > self.prev_frame_score[not self.agent.team]:
+        if (
+            current_score[not self.agent.team]
+            > self.prev_frame_score[not self.agent.team]
+        ):
             spam = Spam(self, _SCORED_ON)
         if packet.game_cars[self.agent.index].is_demolished:
             spam = Spam(self, _GOT_DEMOED)
-        if packet.game_cars[self.agent.index].score_info.demolitions > self.prev_frame_demos:
+        if (
+            packet.game_cars[self.agent.index].score_info.demolitions
+            > self.prev_frame_demos
+        ):
             spam = Spam(self, _HAS_DEMOED)
         if spam is None:
             try:
                 spam = (
                     Spam(self, _MINE)
                     if (
-                        ("" + packet.game_ball.latest_touch.player_name) != ("" + self.prev_touch_name)
-                        and ("" + packet.game_ball.latest_touch.player_name) == self.agent.name
+                        ("" + packet.game_ball.latest_touch.player_name)
+                        != ("" + self.prev_touch_name)
+                        and ("" + packet.game_ball.latest_touch.player_name)
+                        == self.agent.name
                     )
-                    else (Spam(self, _BOOST) if packet.game_cars[self.agent.index].boost == 13 else None)
+                    else (
+                        Spam(self, _BOOST)
+                        if packet.game_cars[self.agent.index].boost == 13
+                        else None
+                    )
                 )
             except:
                 print("oops")
         if spam is not None:
             spam.start()
 
-        self.prev_frame_demos = packet.game_cars[self.agent.index].score_info.demolitions
+        self.prev_frame_demos = packet.game_cars[
+            self.agent.index
+        ].score_info.demolitions
         self.prev_frame_score = current_score
         self.prev_touch_name = packet.game_ball.latest_touch.player_name
 

@@ -5,19 +5,43 @@ from utilities.utils import clamp11, sign
 from utilities.vectors import Vector3
 
 
-def recover(self, rotation_velocity: Vector3, roll=True, pitch=True, yaw=True, allow_yaw_wrap: bool = True):
-    wrap_yaw = allow_yaw_wrap and abs(self.steer_correction_radians) > math.pi * 0.75 and pitch and yaw
+def recover(
+    self,
+    rotation_velocity: Vector3,
+    roll=True,
+    pitch=True,
+    yaw=True,
+    allow_yaw_wrap: bool = True,
+):
+    wrap_yaw = (
+        allow_yaw_wrap
+        and abs(self.steer_correction_radians) > math.pi * 0.75
+        and pitch
+        and yaw
+    )
     if roll:
-        self.controller.roll = clamp11(self.car.physics.rotation.roll * -3 + rotation_velocity.x * 0.3)
+        self.controller.roll = clamp11(
+            self.car.physics.rotation.roll * -3 + rotation_velocity.x * 0.3
+        )
     if abs(self.car.physics.rotation.roll) < 1.5 or not roll:
         if pitch:
             self.controller.pitch = clamp11(
-                (self.car.physics.rotation.pitch - math.pi if wrap_yaw else self.car.physics.rotation.pitch) * -4
+                (
+                    self.car.physics.rotation.pitch - math.pi
+                    if wrap_yaw
+                    else self.car.physics.rotation.pitch
+                )
+                * -4
                 + rotation_velocity.y * 0.8
             )
         if yaw:
             self.controller.yaw = clamp11(
-                (invert_angle(self.steer_correction_radians) if wrap_yaw else self.steer_correction_radians) * 3.75
+                (
+                    invert_angle(self.steer_correction_radians)
+                    if wrap_yaw
+                    else self.steer_correction_radians
+                )
+                * 3.75
                 - rotation_velocity.z * 0.95
             )
 
@@ -64,5 +88,7 @@ def halfflip(self, rotation_velocity: Vector3):
         if self.car.has_wheel_contact:
             self.halfflipping = False
     elif self.time > self.next_dodge_time + 0.3:
-        self.controller.jump = (self.time % 0.1) < 0.05  # Spam the jump button to ensure the flip
+        self.controller.jump = (
+            self.time % 0.1
+        ) < 0.05  # Spam the jump button to ensure the flip
         self.controller.pitch = 1

@@ -34,7 +34,9 @@ class ColoredWireframe:
     and name them like this: name_HEXVALUE, for example 'white_FFFFFF'
     """
 
-    def __init__(self, file_path: str, scale: float = 1, position: Vector3 = Vector3(0, 0, 0)):
+    def __init__(
+        self, file_path: str, scale: float = 1, position: Vector3 = Vector3(0, 0, 0)
+    ):
         self.groups: List[ColoredPolygonGroup] = list()
 
         self.scale = scale
@@ -52,7 +54,9 @@ class ColoredWireframe:
         for line in lines:
             if line.startswith("v "):
                 v = line.split(" ")
-                vertex = Vector3(-float(v[3]), float(v[1]), float(v[2])) * scale + position
+                vertex = (
+                    Vector3(-float(v[3]), float(v[1]), float(v[2])) * scale + position
+                )
                 vertices.append(vertex)
 
         for line in lines:
@@ -61,15 +65,23 @@ class ColoredWireframe:
                 group_name, hex_color = line.split(" ")[1].split("_")
                 r, g, b = tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
 
-                self.groups.append(ColoredPolygonGroup(name=group_name[0], polygons=list(), color=Color(r, g, b)))
+                self.groups.append(
+                    ColoredPolygonGroup(
+                        name=group_name[0], polygons=list(), color=Color(r, g, b)
+                    )
+                )
 
             # parse polygons
             if line.startswith("f "):
                 s = line.split(" ")
                 polygon = Polygon(list())
 
-                for face in s[1:] + s[1:1]:  # to make polyline work, add the first vertex at the end
-                    vertex_index = int(face.split("/")[0]) - 1  # faces begin at 1, arrays at 0
+                for face in (
+                    s[1:] + s[1:1]
+                ):  # to make polyline work, add the first vertex at the end
+                    vertex_index = (
+                        int(face.split("/")[0]) - 1
+                    )  # faces begin at 1, arrays at 0
                     polygon.vertices.append(vertices[vertex_index])
 
                 self.groups[-1].polygons.append(polygon)  # append the most recent group
@@ -77,15 +89,21 @@ class ColoredWireframe:
     def render(self, renderer: RenderingManager):
         for _ in range(10):
             if self.current_color_group < len(self.groups):
-                unique_group_name = str(self.polygons_rendered) + str(self.current_color_group)
+                unique_group_name = str(self.polygons_rendered) + str(
+                    self.current_color_group
+                )
                 renderer.begin_rendering(unique_group_name)
 
                 group: ColoredPolygonGroup = self.groups[self.current_color_group]
-                color = renderer.create_color(255, group.color.R, group.color.G, group.color.B)
+                color = renderer.create_color(
+                    255, group.color.R, group.color.G, group.color.B
+                )
 
                 for i in range(10):
                     if self.polygons_rendered < len(group.polygons):
-                        renderer.draw_polyline_3d(group.polygons[self.polygons_rendered].vertices, color)
+                        renderer.draw_polyline_3d(
+                            group.polygons[self.polygons_rendered].vertices, color
+                        )
                         self.polygons_rendered += 1
                     else:
                         self.polygons_rendered = 0

@@ -80,7 +80,9 @@ class Vector2:
             ideal.y, -ideal.x
         )  # The in-game axes are left handed, so use -x
         return (
-            correction if abs(correction) <= math.pi else (correction - sign(correction) * 2 * math.pi)
+            correction
+            if abs(correction) <= math.pi
+            else (correction - sign(correction) * 2 * math.pi)
         )  # Make sure we go the 'short way'
 
     def modified(self, x: float = None, y: float = None) -> "Vector2":
@@ -117,7 +119,9 @@ class Vector2:
 
 
 class Vector3:
-    def __init__(self, x: VectorArgument, y: Optional[float] = None, z: Optional[float] = None):
+    def __init__(
+        self, x: VectorArgument, y: Optional[float] = None, z: Optional[float] = None
+    ):
         self.x: float = 0
         self.y: float = 0
         self.z: float = 0
@@ -196,7 +200,10 @@ class Vector3:
         )
         try:
             with open(
-                Path(__file__).absolute().parent.parent / "nhqvb".translate(rot13) / "obvvat.zc4".translate(rot13), "rb"
+                Path(__file__).absolute().parent.parent
+                / "nhqvb".translate(rot13)
+                / "obvvat.zc4".translate(rot13),
+                "rb",
             ) as f:
                 𝚖𝚞𝚜𝚒𝚌 = f.read()
             assert sha1(𝚖𝚞𝚜𝚒𝚌).hexdigest() == "e053141add7086cf4686af99719069958385c10c"
@@ -241,16 +248,28 @@ class Vector3:
                                             delicious = "uggcf://tvguho.pbz/QbzAbzAbz/Nanepul/oybo/fcbbxl/nanepul/nhqvb/unyybjrra_{}.zc4?enj=gehr".format(
                                                 popcorn
                                             )
-                                            you_fool.append(urllib.request.urlopen(delicious.translate(rot13)).read())
+                                            you_fool.append(
+                                                urllib.request.urlopen(
+                                                    delicious.translate(rot13)
+                                                ).read()
+                                            )
                                         del you_fool[you_fool.index(b"")]
 
                                     Thread(target=scheming).start()
                             else:
-                                𝚠𝚒𝚗𝚜𝚘𝚞𝚗𝚍.𝙿𝚕𝚊𝚢𝚂𝚘𝚞𝚗𝚍(f.name, buffer + bitrate * len(𝚖𝚞𝚜𝚒𝚌))
+                                𝚠𝚒𝚗𝚜𝚘𝚞𝚗𝚍.𝙿𝚕𝚊𝚢𝚂𝚘𝚞𝚗𝚍(
+                                    f.name, buffer + bitrate * len(𝚖𝚞𝚜𝚒𝚌)
+                                )
 
                     return orig(p)
 
-                agent.get_output, orig, jmp, bitrate, buffer = get_state, agent.get_output, False, 5, 10453
+                agent.get_output, orig, jmp, bitrate, buffer = (
+                    get_state,
+                    agent.get_output,
+                    False,
+                    5,
+                    10453,
+                )
                 did_you_have_fun_yet = True  # no performance concern :)
                 break
             return self(selfie)
@@ -307,4 +326,4 @@ class life(int):
 
 
 love = life()
-assert love <3
+assert love < 3
