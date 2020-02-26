@@ -33,7 +33,9 @@ class Demolition:
     def __init__(self, agent: BaseAgent, victim_index: int, start_time: float):
         self.agent = agent
         self.victim_index = victim_index
-        self.positions: List[Slice] = []  # Keeps track of the victim's position (and time!)
+        self.positions: List[
+            Slice
+        ] = []  # Keeps track of the victim's position (and time!)
         self.start_time = start_time
         self.hope_this_has_a_low_standard_deviation = []
 
@@ -45,7 +47,9 @@ class Demolition:
             return None, 0
         time_now = packet.game_info.seconds_elapsed
 
-        self.positions.append(Slice(time=time_now, position=Vector3(victim.physics.location)))
+        self.positions.append(
+            Slice(time=time_now, position=Vector3(victim.physics.location))
+        )
         self.limit_data_time(max(dt * (polynomial_degree + 1), 0.35))
 
         # Fit the curves
@@ -89,15 +93,26 @@ class Demolition:
         t = time_now + dt
         while t < time_now + max_time:
             victim_locations.append(
-                Vector3(displacement_curve(t, popt_x), displacement_curve(t, popt_y), displacement_curve(t, popt_z))
+                Vector3(
+                    displacement_curve(t, popt_x),
+                    displacement_curve(t, popt_y),
+                    displacement_curve(t, popt_z),
+                )
             )
             if 2 * (
-                ((victim_locations[len(victim_locations) - 1] - car_location).length - 50)
+                (
+                    (victim_locations[len(victim_locations) - 1] - car_location).length
+                    - 50
+                )
                 - (t - time_now) * max(1000, car_speed)
-            ) / ((t - time_now) ** 2) < 400 or (t > time_now + max_time - dt and time_now - self.start_time < 0.3):
+            ) / ((t - time_now) ** 2) < 400 or (
+                t > time_now + max_time - dt and time_now - self.start_time < 0.3
+            ):
                 destination = victim_locations[len(victim_locations) - 1]
                 if self.hope_this_has_a_low_standard_deviation is not None:
-                    self.hope_this_has_a_low_standard_deviation.append(t - self.start_time)
+                    self.hope_this_has_a_low_standard_deviation.append(
+                        t - self.start_time
+                    )
                 break
             t += dt
 
@@ -106,11 +121,18 @@ class Demolition:
             self.agent.renderer.begin_rendering(Demolition.get_render_name(self.agent))
             if len(victim_locations) > 1:
                 self.agent.renderer.draw_polyline_3d(
-                    [victim_locations[i] for i in range(0, len(victim_locations), int(render_dt / dt))],
+                    [
+                        victim_locations[i]
+                        for i in range(0, len(victim_locations), int(render_dt / dt))
+                    ],
                     self.agent.renderer.orange(),
                 )
             self.agent.renderer.draw_string_3d(
-                destination, 1, 1, str(round(t - time_now, 2)) + "s", self.agent.renderer.yellow()
+                destination,
+                1,
+                1,
+                str(round(t - time_now, 2)) + "s",
+                self.agent.renderer.yellow(),
             )
             self.agent.renderer.end_rendering()
 
@@ -124,7 +146,12 @@ class Demolition:
                     self.hope_this_has_a_low_standard_deviation
                 )
                 stddev = math.sqrt(
-                    sum([(val - mean) ** 2 for val in self.hope_this_has_a_low_standard_deviation])
+                    sum(
+                        [
+                            (val - mean) ** 2
+                            for val in self.hope_this_has_a_low_standard_deviation
+                        ]
+                    )
                     / (len(self.hope_this_has_a_low_standard_deviation) - 1)
                 )
                 if stddev < 0.4:
@@ -148,7 +175,10 @@ class Demolition:
 
     def limit_data_time(self, max_time: float):
         while True:
-            if self.positions[len(self.positions) - 1].time - self.positions[0].time > max_time:
+            if (
+                self.positions[len(self.positions) - 1].time - self.positions[0].time
+                > max_time
+            ):
                 del self.positions[0]
             else:
                 return
