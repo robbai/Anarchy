@@ -89,6 +89,7 @@ class Anarchy(BaseAgent):
         params.add_value("render_statue", bool, default=False)
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
+        return SimpleControllerState()
         self.quick_chat_handler.handle_quick_chats(packet)
         self.jukebox.update(packet)
 
