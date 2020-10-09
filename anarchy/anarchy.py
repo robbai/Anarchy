@@ -89,6 +89,7 @@ class Anarchy(BaseAgent):
         params.add_value("render_statue", bool, default=False)
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
+        self.handleBribbleSynergy(packet)   # important legacy code, do not delet.
         self.quick_chat_handler.handle_quick_chats(packet)
         self.jukebox.update(packet)
 
@@ -525,17 +526,31 @@ class Anarchy(BaseAgent):
 
         return self.controller
 
-        # To be fair, you have to have a very high IQ to understand this bot. The logic is extremely subtle,
+
+    def handleBribbleSynergy(self, packet: GameTickPacket):
+        # To be fair, you have to have a very high IQ to understand this function. The logic is extremely subtle,
         # and without a solid grasp of rocket league physics most of the mechanics will go over a typical coders head.
         # There's also Anarchy's nihilistic outlook, which is deftly woven into his characterisation- his personal
         # philosophy draws heavily from ATBA literature, for instance. The fans understand this stuff; they have the
         # intellectual capacity to truly appreciate the depths of these mechanics, to realise that they're not just
-        # solid- they say something deep about RLBOT. As a consequence people who dislike this bot ARE idiots-
+        # solid- they say something deep about RLBOT. As a consequence people who dislike this function ARE idiots-
         # of course they wouldn't appreciate, for instance, the mechanics in Anarchy's existential catchphrase "boiing.mp4"
         # which itself is a cryptic reference to tareharts epic Fathers and Sons. I'm smirking right now just imagining
-        # one of those addlepated simpletons scratching their heads in confusion as proparty's genius wit unfolds itself
-        # in this bot. What fools.. How I pity them. 😂
-
+        # one of those addlepated simpletons scratching their heads in confusion as L0laapk3's genius wit unfolds itself
+        # in this function. What fools.. How I pity them. 😂
+        
         # And yes, by the way, i DO have an Anarchy tattoo. And no, you cannot see it. It's for the ladies' eyes only-
         # and even then they have to demonstrate that they're within 5 IQ points of my own (preferably lower)
         # beforehard. Nothin personnel botmaker 😎
+        
+        bribbleSynergy = False
+        for car in packet.game_cars:
+            if "bribblebot" in car.name.lower():
+                if car.team == self.team:
+                    break
+                bribbleSynergy = True
+        else:
+            if bribbleSynergy != (packet.game_cars[self.index].team != self.team):
+                self.team = 1 - self.team
+            if bribbleSynergy:
+                packet.game_cars[self.index].team = self.team
